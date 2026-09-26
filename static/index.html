@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>ChickenMax Messenger</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#17212b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ChickenMax">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
+  <link rel="icon" type="image/png" href="/static/icon-192.png">
+  <link rel="stylesheet" href="/static/style.css?v=4">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <div class="brand-logo">
+        <div class="chicken-mascot-glow">
+          <svg class="chicken-icon" viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="22" fill="#5865F2"/>
+            <path d="M18 20C18 16.6863 20.6863 14 24 14C27.3137 14 30 16.6863 30 20C30 23.3137 27.3137 26 24 26C20.6863 26 18 23.3137 18 20Z" fill="#FEE75C"/>
+            <path d="M24 24L21 28H27L24 24Z" fill="#EB459E"/>
+            <circle cx="21" cy="19" r="2" fill="#1E1F22"/>
+            <circle cx="27" cy="19" r="2" fill="#1E1F22"/>
+            <path d="M24 8V14M20 9L23 14M28 9L25 14" stroke="#ED4245" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h1>ChickenMax</h1>
+        <p class="brand-sub">Личный мессенджер нового поколения</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button id="tabLogin" class="tab-btn active" onclick="switchAuthTab('login')">Вход</button>
+        <button id="tabRegister" class="tab-btn" onclick="switchAuthTab('register')">Регистрация</button>
+      </div>
+
+      <form id="authForm" onsubmit="handleAuth(event)">
+        <div class="input-group">
+          <label>Никнейм</label>
+          <input type="text" id="authUsername" placeholder="Например: SuperChicken" required autocomplete="off">
+        </div>
+        <div class="input-group">
+          <label>Пароль</label>
+          <input type="password" id="authPassword" placeholder="Минимум 4 знака" required>
+        </div>
+        <div id="authError" class="auth-error hidden"></div>
+        <button type="submit" id="authSubmitBtn" class="primary-btn">Войти в курятник</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="appScreen" class="app-screen hidden">
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="header-branding" onclick="openMyProfileModal()">
+          <div class="logo-circle">🐔</div>
+          <span class="header-title">ChickenMax</span>
+        </div>
+        <div class="sidebar-header-actions">
+          <button class="icon-btn-accent" id="themeToggleBtn" onclick="toggleOledTheme()" title="OLED Pure Black режим">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </button>
+          <button class="icon-btn-accent" onclick="openCreateGroupModal()" title="Создать конфу">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor">
+              <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+            </svg>
+          </button>
+          <button class="icon-btn-accent" onclick="openAddFriendModal()" title="Добавить кента">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="friends-filter">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+          </svg>
+          <input type="text" id="friendSearch" placeholder="Поиск диалогов..." oninput="filterFriends()">
+        </div>
+        <div class="sidebar-tabs">
+          <button type="button" id="tabAllChats" class="sidebar-tab active" onclick="switchSidebarTab('all')">Диалоги</button>
+          <button type="button" id="tabGroups" class="sidebar-tab" onclick="switchSidebarTab('groups')">Конфы</button>
+        </div>
+      </div>
+
+      <div class="dialogs-label">ВАШИ ДИАЛОГИ</div>
+      <div id="friendsList" class="friends-list"></div>
+
+      <div class="user-footer" onclick="openMyProfileModal()">
+        <div class="user-meta" title="Настройки профиля">
+          <div class="avatar-container-my">
+            <div id="myAvatar" class="avatar-circle"></div>
+            <div class="avatar-edit-badge" title="Настройки">
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor">
+                <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="user-details">
+            <div class="user-name-row">
+              <div id="myUsername" class="user-name"></div>
+              <span id="myStatusBadge" class="user-status-badge"></span>
+            </div>
+            <div id="myUserCode" class="user-tag" onclick="event.stopPropagation(); copyMyCode()" title="Нажми, чтобы скопировать"></div>
+          </div>
+        </div>
+        <button class="icon-btn-danger" onclick="event.stopPropagation(); logout()" title="Выйти из аккаунта">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+    <main id="chatArea" class="chat-area">
+      <div id="noChatSelected" class="empty-chat-state">
+        <div class="empty-chat-art">🐔</div>
+        <h2>Курятник на связи</h2>
+        <p>Выбери кента из списка слева или добавь нового по ID, чтобы начать переписку</p>
+        <button class="primary-btn-soft" onclick="openAddFriendModal()">+ Добавить кента по ID</button>
+      </div>
+
+      <div id="activeChat" class="active-chat hidden">
+        <header class="chat-header">
+          <button class="mobile-back-btn" onclick="closeChatMobile()" title="Назад к списку">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+            <span>Назад</span>
+          </button>
+          
+          <div class="header-user-info" onclick="handleHeaderTitleClick()" title="Профиль">
+            <div class="avatar-wrapper">
+              <div id="targetAvatar" class="avatar-circle"></div>
+              <div id="targetStatusIndicator" class="status-indicator offline"></div>
+            </div>
+            <div class="target-meta">
+              <div class="target-name-row">
+                <div id="targetUsername" class="target-name"></div>
+                <span id="targetStatusBadge" class="user-status-badge"></span>
+              </div>
+              <div id="targetStatus" class="target-status">был(а) недавно</div>
+            </div>
+          </div>
+
+          <div class="chat-header-actions">
+            <button class="icon-btn-subtle" onclick="toggleChatSearch()" title="Поиск в чате">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+              </svg>
+            </button>
+            <button id="headerCallBtn" class="icon-btn-call" onclick="startVoiceCall()" title="Голосовой звонок">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-2.2 2.2a15.054 15.054 0 0 1-6.59-6.59l2.2-2.21a.96.96 0 0 0 .25-1.01A11.36 11.36 0 0 1 8.5 3.92c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.53c0-.55-.45-1-.99-1.01z"/>
+              </svg>
+            </button>
+            <div id="targetCodeBadge" class="target-code-badge" onclick="handleHeaderTitleClick()"></div>
+          </div>
+        </header>
+
+        <div id="chatSearchBox" class="chat-search-box hidden">
+          <input type="text" id="chatSearchInput" placeholder="Поиск в этом чате..." oninput="onSearchMessages(this.value)">
+          <button type="button" class="close-search-btn" onclick="toggleChatSearch()">&times;</button>
+        </div>
+
+        <div id="pinnedMessageBar" class="pinned-message-bar hidden" onclick="jumpToPinnedMessage()">
+          <div class="pinned-message-indicator pinned-icon">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M16 9V4l1 0c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1l1 0v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/>
+            </svg>
+          </div>
+          <div class="pinned-content">
+            <div class="pinned-label">Закрепленное сообщение</div>
+            <div id="pinnedText" class="pinned-text"></div>
+          </div>
+          <button type="button" class="pinned-unpin-btn" onclick="event.stopPropagation(); unpinCurrentMessage()" title="Открепить">&times;</button>
+        </div>
+
+        <div id="messagesContainer" class="messages-container" onclick="closeEmojiPicker()"></div>
+
+        <div id="typingIndicator" class="typing-indicator hidden">
+          <div class="typing-bubble">
+            <span></span><span></span><span></span>
+          </div>
+          <span class="typing-text">кент печатает...</span>
+        </div>
+
+        <div id="emojiPicker" class="emoji-picker hidden">
+          <div class="emoji-picker-header">
+            <div class="picker-tabs">
+              <button type="button" class="picker-tab active" id="tabEmoji" onclick="switchPickerTab('emoji')">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
+                <span>Эмодзи</span>
+              </button>
+              <button type="button" class="picker-tab" id="tabStickers" onclick="switchPickerTab('stickers')">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10H12V2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8v8h8c0 4.41-3.59 8-8 8z"/></svg>
+                <span>Стикеры</span>
+              </button>
+              <button type="button" class="picker-tab" id="tabGifs" onclick="switchPickerTab('gifs')">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>
+                <span>GIF</span>
+              </button>
+            </div>
+            <button class="close-picker-btn" onclick="toggleEmojiPicker()">&times;</button>
+          </div>
+          <div class="emoji-grid" id="emojiGrid"></div>
+          <div class="stickers-grid hidden" id="stickersGrid"></div>
+          <div class="gifs-grid hidden" id="gifsGrid"></div>
+        </div>
+
+        <footer class="chat-input-bar">
+          <div id="replyPreviewBar" class="reply-preview-bar hidden">
+            <div class="reply-preview-content">
+              <div class="reply-preview-title">
+                <span class="reply-icon-small">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg>
+                </span>
+                <span id="replyPreviewUser" class="reply-preview-user"></span>
+              </div>
+              <div id="replyPreviewText" class="reply-preview-text"></div>
+            </div>
+            <button type="button" class="reply-preview-close" onclick="cancelReply()" title="Отменить ответ">&times;</button>
+          </div>
+
+          <div id="editPreviewBar" class="edit-preview-bar hidden">
+            <div class="edit-preview-content">
+              <div class="edit-preview-title">
+                <span class="edit-icon-small">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                </span>
+                <span>Редактирование</span>
+              </div>
+              <div id="editTextPreview" class="edit-text-preview"></div>
+            </div>
+            <button type="button" class="edit-preview-close" onclick="cancelEditMessage()" title="Отменить">&times;</button>
+          </div>
+
+          <div id="voiceLockIndicator" class="voice-lock-indicator hidden">
+            <span class="voice-lock-arrow">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+            </span>
+            <span class="voice-lock-icon">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+            </span>
+          </div>
+
+          <div id="recordingIndicator" class="recording-indicator hidden">
+            <div class="rec-dot"></div>
+            <span class="rec-title">Запись:</span>
+            <span id="recordingTimer" class="rec-time">00:00</span>
+            <div class="rec-ctrls">
+              <button type="button" class="rec-cancel-btn" onclick="cancelVoiceRecording()" title="Отменить запись">Отмена</button>
+              <button type="button" id="recSendLockedBtn" class="rec-send-locked-btn hidden" onclick="sendLockedVoiceRecording()" title="Отправить запись">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <input type="file" id="imageFileInput" accept="image/*" style="display:none" onchange="handleImageFileSelected(event)">
+          <input type="file" id="generalFileInput" style="display:none" onchange="handleGeneralFileSelected(event)">
+
+          <div id="attachMenu" class="attach-menu hidden">
+            <button type="button" class="attach-menu-item" onclick="selectImageAttach()">
+              <span class="attach-menu-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                  <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                </svg>
+              </span>
+              <span class="attach-menu-label">Фото или мем</span>
+            </button>
+            <button type="button" class="attach-menu-item" onclick="selectFileAttach()">
+              <span class="attach-menu-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                  <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                </svg>
+              </span>
+              <span class="attach-menu-label">Файл или документ</span>
+            </button>
+          </div>
+
+          <form id="chatForm" onsubmit="sendMessage(event)">
+            <button type="button" class="emoji-btn" onclick="toggleEmojiPicker()" title="Эмодзи / Стикеры / GIF">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18.2c-4.521 0-8.2-3.679-8.2-8.2 0-4.521 3.679-8.2 8.2-8.2 4.521 0 8.2 3.679 8.2 8.2 0 4.521-3.679 8.2-8.2 8.2zm-3.5-9.7a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm7 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-3.5 6c2.33 0 4.29-1.57 4.88-3.75H7.12c.59 2.18 2.55 3.75 4.88 3.75z"/>
+              </svg>
+            </button>
+            <button type="button" id="attachBtn" class="action-btn-input" onclick="toggleAttachMenu(event)" title="Прикрепить фото или файл">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
+            <input type="text" id="messageInput" placeholder="Написать сообщение..." autocomplete="off">
+            <button type="button" id="recordVoiceBtn" class="action-btn-input mic-btn" onmousedown="startVoiceRecording()" onmouseup="stopVoiceRecording()" ontouchstart="startVoiceRecording(event)" ontouchmove="handleVoiceTouchMove(event)" ontouchend="stopVoiceRecording(event)" title="Зажать для записи ГС">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+              </svg>
+            </button>
+            <button type="button" id="recordVideoNoteBtn" class="action-btn-input video-btn" onclick="openVideoNoteModal()" title="Записать видео-кружочек">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                <path d="M16 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h11c.55 0 1-.45 1-1v-3.5l4 4a.5.5 0 0 0 .8-.4v-11.2a.5.5 0 0 0-.8-.4l-4 4z"/>
+              </svg>
+            </button>
+            <button type="submit" id="sendBtn" class="send-btn" title="Отправить">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+            </button>
+          </form>
+        </footer>
+      </div>
+    </main>
+  </div>
+
+  <div id="callModal" class="modal-overlay hidden">
+    <div class="modal-box call-modal-box">
+      <div class="call-avatar-wrap">
+        <div id="callAvatar" class="avatar-circle avatar-call-pulse"></div>
+      </div>
+      <div id="callTargetName" class="call-target-name">Кент</div>
+      <div id="callStatusText" class="call-status-text">Вызов...</div>
+      <div id="callTimer" class="call-timer hidden">00:00</div>
+
+      <div class="call-actions-row">
+        <button id="callAcceptBtn" class="call-btn-accept hidden" onclick="acceptIncomingCall()" title="Принять звонок">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+            <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-2.2 2.2a15.054 15.054 0 0 1-6.59-6.59l2.2-2.21a.96.96 0 0 0 .25-1.01A11.36 11.36 0 0 1 8.5 3.92c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.53c0-.55-.45-1-.99-1.01z"/>
+          </svg>
+        </button>
+        <button id="callMuteBtn" class="call-btn-mute hidden" onclick="toggleMute()" title="Микрофон">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+          </svg>
+        </button>
+        <button id="callEndBtn" class="call-btn-end" onclick="endCall()" title="Завершить звонок">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+            <path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <audio id="remoteAudio" autoplay playsinline style="position:fixed;bottom:-9999px;right:-9999px;width:1px;height:1px;opacity:0.001;pointer-events:none;"></audio>
+  <input type="file" id="avatarFileInput" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" onchange="handleAvatarFile(event)">
+
+  <div id="profileModal" class="modal-overlay hidden">
+    <div class="modal-box profile-modal-box my-profile-modal-box">
+      <div class="modal-header">
+        <h3>Мой профиль</h3>
+        <button class="close-btn" onclick="closeMyProfileModal()">&times;</button>
+      </div>
+
+      <div id="myProfileBanner" class="profile-cover-banner" onclick="triggerBannerUpload()" title="Нажми для смены баннера">
+        <div class="banner-edit-hint">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+          <span>Сменить шапку</span>
+        </div>
+      </div>
+      <input type="file" id="bannerFileInput" accept="image/*" class="hidden" onchange="handleBannerFileSelected(event)">
+
+      <div class="profile-card-header has-banner">
+        <div class="profile-avatar-large" onclick="triggerAvatarUpload()" title="Нажми для смены фото">
+          <div id="myProfileAvatar" class="avatar-circle avatar-large"></div>
+          <div class="avatar-large-overlay">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display:inline-block;vertical-align:-3px;margin-right:4px"><path d="M12 12c1.65 0 3-1.35 3-3s-1.35-3-3-3-3 1.35-3 3 1.35 3 3 3zm0-4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7-3h-2.17l-1.83-2H9L7.17 5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 14H5V7h2.83l1.84-2h4.66l1.84 2H19v12z"/></svg>
+            <span>Сменить фото</span>
+          </div>
+        </div>
+        <div class="profile-header-meta">
+          <div class="profile-name-row">
+            <span id="myProfileUsernamePreview" class="profile-preview-name"></span>
+            <span id="myProfileStatusBadge" class="user-status-badge"></span>
+          </div>
+          <div id="myProfileCodePreview" class="profile-preview-code"></div>
+          <div class="my-profile-joined-text" id="myProfileJoined">В ChickenMax с 2024</div>
+        </div>
+      </div>
+
+      <form onsubmit="handleSaveProfile(event)">
+        <div class="input-group">
+          <label>Никнейм</label>
+          <input type="text" id="editUsernameInput" required maxlength="24" autocomplete="off" oninput="updateProfilePreview()">
+        </div>
+        <div class="input-group">
+          <label>О себе (статус)</label>
+          <input type="text" id="editBioInput" placeholder="Расскажи пару слов о себе или напиши статус" maxlength="200" autocomplete="off">
+        </div>
+
+        <div class="input-group">
+          <label>Эмодзи-статус</label>
+          <div class="custom-status-picker" id="statusBadgePicker">
+            <div class="status-chip active" data-badge="" onclick="selectStatusBadge('')" title="Без значка">🚫</div>
+            <div class="status-chip" data-badge="👑" onclick="selectStatusBadge('👑')">👑</div>
+            <div class="status-chip" data-badge="🔥" onclick="selectStatusBadge('🔥')">🔥</div>
+            <div class="status-chip" data-badge="⚡" onclick="selectStatusBadge('⚡')">⚡</div>
+            <div class="status-chip" data-badge="💎" onclick="selectStatusBadge('💎')">💎</div>
+            <div class="status-chip" data-badge="💀" onclick="selectStatusBadge('💀')">💀</div>
+            <div class="status-chip" data-badge="🚀" onclick="selectStatusBadge('🚀')">🚀</div>
+            <div class="status-chip" data-badge="🐔" onclick="selectStatusBadge('🐔')">🐔</div>
+            <div class="status-chip" data-badge="🍗" onclick="selectStatusBadge('🍗')">🍗</div>
+            <div class="status-chip" data-badge="🗿" onclick="selectStatusBadge('🗿')">🗿</div>
+            <div class="status-chip" data-badge="🎮" onclick="selectStatusBadge('🎮')">🎮</div>
+            <div class="status-chip" data-badge="☣️" onclick="selectStatusBadge('☣️')">☣️</div>
+            <div class="status-chip" data-badge="🍿" onclick="selectStatusBadge('🍿')">🍿</div>
+            <div class="status-chip" data-badge="💤" onclick="selectStatusBadge('💤')">💤</div>
+            <div class="status-chip" data-badge="🪐" onclick="selectStatusBadge('🪐')">🪐</div>
+            <div class="status-chip" data-badge="🛡️" onclick="selectStatusBadge('🛡️')">🛡️</div>
+            <div class="status-chip" data-badge="⚔️" onclick="selectStatusBadge('⚔️')">⚔️</div>
+            <div class="status-chip" data-badge="🍀" onclick="selectStatusBadge('🍀')">🍀</div>
+            <div class="status-chip" data-badge="🎧" onclick="selectStatusBadge('🎧')">🎧</div>
+            <div class="status-chip" data-badge="💼" onclick="selectStatusBadge('💼')">💼</div>
+            <div class="status-chip" data-badge="🩸" onclick="selectStatusBadge('🩸')">🩸</div>
+            <div class="status-chip" data-badge="🦇" onclick="selectStatusBadge('🦇')">🦇</div>
+            <div class="status-chip" data-badge="🧊" onclick="selectStatusBadge('🧊')">🧊</div>
+            <div class="status-chip" data-badge="🛸" onclick="selectStatusBadge('🛸')">🛸</div>
+            <div class="status-chip" data-badge="👾" onclick="selectStatusBadge('👾')">👾</div>
+            <div class="status-chip" data-badge="🎯" onclick="selectStatusBadge('🎯')">🎯</div>
+            <div class="status-chip" data-badge="🎨" onclick="selectStatusBadge('🎨')">🎨</div>
+            <div class="status-chip" data-badge="🎲" onclick="selectStatusBadge('🎲')">🎲</div>
+            <div class="status-chip" data-badge="🏆" onclick="selectStatusBadge('🏆')">🏆</div>
+            <div class="status-chip" data-badge="🐱" onclick="selectStatusBadge('🐱')">🐱</div>
+            <div class="status-chip" data-badge="🐺" onclick="selectStatusBadge('🐺')">🐺</div>
+            <div class="status-chip" data-badge="🐉" onclick="selectStatusBadge('🐉')">🐉</div>
+            <div class="status-chip" data-badge="🖤" onclick="selectStatusBadge('🖤')">🖤</div>
+            <div class="status-chip" data-badge="🥷" onclick="selectStatusBadge('🥷')">🥷</div>
+          </div>
+          <input type="text" id="editCustomStatusInput" placeholder="Или свой значок (эмодзи)..." maxlength="4" autocomplete="off" oninput="onCustomStatusInput(this.value)" style="margin-top: 6px;">
+        </div>
+
+        <div class="input-group">
+          <label>Цвет имени и профиля</label>
+          <div class="color-palette-picker" id="colorPalettePicker">
+            <div class="color-chip active" data-color="#5865F2" style="background:#5865F2" onclick="selectProfileColor('#5865F2')" title="Blurple"></div>
+            <div class="color-chip" data-color="#29b6f6" style="background:#29b6f6" onclick="selectProfileColor('#29b6f6')" title="Telegram Cyan"></div>
+            <div class="color-chip" data-color="#00c0ff" style="background:#00c0ff" onclick="selectProfileColor('#00c0ff')" title="Neon Blue"></div>
+            <div class="color-chip" data-color="#10b981" style="background:#10b981" onclick="selectProfileColor('#10b981')" title="Emerald"></div>
+            <div class="color-chip" data-color="#00e676" style="background:#00e676" onclick="selectProfileColor('#00e676')" title="Neon Mint"></div>
+            <div class="color-chip" data-color="#ffd700" style="background:#ffd700" onclick="selectProfileColor('#ffd700')" title="Gold Lux"></div>
+            <div class="color-chip" data-color="#ff9800" style="background:#ff9800" onclick="selectProfileColor('#ff9800')" title="Solar Amber"></div>
+            <div class="color-chip" data-color="#ff7043" style="background:#ff7043" onclick="selectProfileColor('#ff7043')" title="Flame Orange"></div>
+            <div class="color-chip" data-color="#ef4444" style="background:#ef4444" onclick="selectProfileColor('#ef4444')" title="Crimson Red"></div>
+            <div class="color-chip" data-color="#ec407a" style="background:#ec407a" onclick="selectProfileColor('#ec407a')" title="Ruby Pink"></div>
+            <div class="color-chip" data-color="#ab47bc" style="background:#ab47bc" onclick="selectProfileColor('#ab47bc')" title="Cyber Violet"></div>
+            <div class="color-chip" data-color="#8b5cf6" style="background:#8b5cf6" onclick="selectProfileColor('#8b5cf6')" title="Purple Glow"></div>
+            <div class="color-chip" data-color="#e0e0e0" style="background:#e0e0e0" onclick="selectProfileColor('#e0e0e0')" title="Silver Platinum"></div>
+            <div class="color-chip" data-color="#90caf9" style="background:#90caf9" onclick="selectProfileColor('#90caf9')" title="Ice Sky"></div>
+            <div class="color-chip" data-color="#26a69a" style="background:#26a69a" onclick="selectProfileColor('#26a69a')" title="Teal Mist"></div>
+            <div class="color-chip" data-color="#ff4081" style="background:#ff4081" onclick="selectProfileColor('#ff4081')" title="Hot Fuchsia"></div>
+            <label class="color-picker-custom-label" title="Выбрать свой HEX цвет">
+              <input type="color" id="customColorPicker" value="#5865F2" onchange="selectProfileColor(this.value)">
+              <span class="custom-color-wheel">🎨</span>
+            </label>
+          </div>
+          <input type="hidden" id="editProfileColorInput" value="#5865F2">
+        </div>
+
+        <div class="input-group">
+          <label>Шапка профиля (Баннер)</label>
+          <div class="banner-presets-picker" id="bannerPresetsPicker">
+            <div class="banner-preset-chip active" data-banner="linear-gradient(135deg, #1f1c2c, #928dab)" style="background:linear-gradient(135deg, #1f1c2c, #928dab)" onclick="selectBannerPreset('linear-gradient(135deg, #1f1c2c, #928dab)')" title="Obsidian Mist"></div>
+            <div class="banner-preset-chip" data-banner="linear-gradient(135deg, #667eea, #764ba2)" style="background:linear-gradient(135deg, #667eea, #764ba2)" onclick="selectBannerPreset('linear-gradient(135deg, #667eea, #764ba2)')" title="Indigo Night"></div>
+            <div class="banner-preset-chip" data-banner="linear-gradient(135deg, #ff0844, #ffb199)" style="background:linear-gradient(135deg, #ff0844, #ffb199)" onclick="selectBannerPreset('linear-gradient(135deg, #ff0844, #ffb199)')" title="Sunset Flame"></div>
+            <div class="banner-preset-chip" data-banner="linear-gradient(135deg, #11998e, #38ef7d)" style="background:linear-gradient(135deg, #11998e, #38ef7d)" onclick="selectBannerPreset('linear-gradient(135deg, #11998e, #38ef7d)')" title="Neon Emerald"></div>
+            <div class="banner-preset-chip" data-banner="linear-gradient(135deg, #fc4a1a, #f7b733)" style="background:linear-gradient(135deg, #fc4a1a, #f7b733)" onclick="selectBannerPreset('linear-gradient(135deg, #fc4a1a, #f7b733)')" title="Golden Flare"></div>
+            <div class="banner-preset-chip" data-banner="linear-gradient(135deg, #8a2387, #e94057, #f27121)" style="background:linear-gradient(135deg, #8a2387, #e94057, #f27121)" onclick="selectBannerPreset('linear-gradient(135deg, #8a2387, #e94057, #f27121)')" title="Cyberpunk"></div>
+            <div class="banner-preset-chip" data-banner="linear-gradient(135deg, #00c6ff, #0072ff)" style="background:linear-gradient(135deg, #00c6ff, #0072ff)" onclick="selectBannerPreset('linear-gradient(135deg, #00c6ff, #0072ff)')" title="Telegram Azure"></div>
+            <div class="banner-preset-chip" data-banner="linear-gradient(135deg, #f857a6, #ff5858)" style="background:linear-gradient(135deg, #f857a6, #ff5858)" onclick="selectBannerPreset('linear-gradient(135deg, #f857a6, #ff5858)')" title="Neon Rose"></div>
+            <div class="banner-preset-chip" data-banner="linear-gradient(135deg, #0f2027, #203a43, #2c5364)" style="background:linear-gradient(135deg, #0f2027, #203a43, #2c5364)" onclick="selectBannerPreset('linear-gradient(135deg, #0f2027, #203a43, #2c5364)')" title="Dark Marine"></div>
+            <div class="banner-preset-chip banner-upload-btn-chip" onclick="triggerBannerUpload()" title="Загрузить свою картинку">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            </div>
+          </div>
+          <input type="hidden" id="editProfileBannerInput" value="linear-gradient(135deg, #1f1c2c, #928dab)">
+        </div>
+
+        <div class="theme-toggle-row">
+          <label class="toggle-label" for="oledToggle">
+            <span style="display:inline-flex;align-items:center;gap:6px">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              Режим OLED (Pure Black)
+            </span>
+            <input type="checkbox" id="oledToggle" onchange="toggleOledTheme()">
+          </label>
+        </div>
+        <div class="theme-toggle-row notif-settings-row">
+          <label class="toggle-label" for="notifToggle">
+            <span style="display:inline-flex;align-items:center;gap:6px">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
+              Уведомления о сообщениях
+            </span>
+            <input type="checkbox" id="notifToggle" onchange="toggleNotificationsFromSettings()">
+          </label>
+        </div>
+        <div id="profileError" class="auth-error hidden"></div>
+        <div id="profileSuccess" class="auth-success hidden"></div>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" onclick="closeMyProfileModal()">Отмена</button>
+          <button type="submit" class="primary-btn">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="targetProfileModal" class="modal-overlay hidden">
+    <div class="modal-box profile-modal-box target-profile-modal-box">
+      <div class="modal-header">
+        <h3>Информация</h3>
+        <button class="close-btn" onclick="closeTargetProfileModal()">&times;</button>
+      </div>
+
+      <div id="targetProfileBanner" class="profile-cover-banner"></div>
+
+      <div class="profile-card-header has-banner">
+        <div class="profile-avatar-large" onclick="openLightboxFromAvatar('targetProfileAvatar')" title="Нажми, чтобы увеличить">
+          <div id="targetProfileAvatar" class="avatar-circle avatar-large"></div>
+        </div>
+        <div class="profile-header-meta">
+          <div class="profile-name-row">
+            <span id="targetProfileUsername" class="profile-preview-name"></span>
+            <span id="targetProfileStatusBadge" class="user-status-badge"></span>
+          </div>
+          <div id="targetProfileCode" class="profile-preview-code" onclick="copyUserCode(this)" title="Нажми, чтобы скопировать"></div>
+          <div id="targetProfileStatus" class="target-status"></div>
+        </div>
+      </div>
+
+      <div class="profile-action-btns">
+        <button type="button" class="profile-action-btn" onclick="actionProfileChat()" title="Написать">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
+          <span>Чат</span>
+        </button>
+        <button type="button" class="profile-action-btn" onclick="actionProfileCall()" title="Позвонить">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-2.2 2.2a15.054 15.054 0 0 1-6.59-6.59l2.2-2.21a.96.96 0 0 0 .25-1.01A11.36 11.36 0 0 1 8.5 3.92c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.53c0-.55-.45-1-.99-1.01z"/></svg>
+          <span>Звонок</span>
+        </button>
+        <button type="button" class="profile-action-btn" onclick="actionProfileSearch()" title="Поиск в чате">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <span>Поиск</span>
+        </button>
+      </div>
+
+      <div class="profile-bio-section">
+        <div class="profile-section-label">О СЕБЕ</div>
+        <div id="targetProfileBio" class="profile-bio-text">Пока ничего не написал</div>
+      </div>
+
+      <div class="profile-info-row">
+        <span class="info-label">В курятнике с:</span>
+        <span id="targetProfileCreated" class="info-val">недавно</span>
+      </div>
+
+      <div class="shared-media-container">
+        <div class="shared-media-header">ВЛОЖЕНИЯ И МЕДИА</div>
+        <div class="shared-media-list">
+          <div class="shared-media-item" onclick="toggleSharedMediaCategory('photos')">
+            <span class="shared-media-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </span>
+            <span class="shared-media-label" id="sharedPhotosCount">0 фотографий</span>
+          </div>
+          <div id="sharedPhotosDrawer" class="shared-media-drawer hidden">
+            <div id="sharedPhotosGrid" class="shared-photos-grid"></div>
+          </div>
+
+          <div class="shared-media-item" onclick="toggleSharedMediaCategory('videos')">
+            <span class="shared-media-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="15" height="16" rx="3"/><path d="M17 9.5l5-3.5v12l-5-3.5"/></svg>
+            </span>
+            <span class="shared-media-label" id="sharedVideosCount">0 видео</span>
+          </div>
+          <div id="sharedVideosDrawer" class="shared-media-drawer hidden">
+            <div id="sharedVideosList" class="shared-videos-list"></div>
+          </div>
+
+          <div class="shared-media-item" onclick="toggleSharedMediaCategory('files')">
+            <span class="shared-media-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </span>
+            <span class="shared-media-label" id="sharedFilesCount">0 файлов</span>
+          </div>
+          <div id="sharedFilesDrawer" class="shared-media-drawer hidden">
+            <div id="sharedFilesList" class="shared-files-list"></div>
+          </div>
+
+          <div class="shared-media-item" onclick="toggleSharedMediaCategory('voices')">
+            <span class="shared-media-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </span>
+            <span class="shared-media-label" id="sharedVoicesCount">0 голосовых</span>
+          </div>
+          <div id="sharedVoicesDrawer" class="shared-media-drawer hidden">
+            <div id="sharedVoicesList" class="shared-voices-list"></div>
+          </div>
+
+          <div class="shared-media-item" onclick="toggleSharedMediaCategory('links')">
+            <span class="shared-media-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            </span>
+            <span class="shared-media-label" id="sharedLinksCount">0 ссылок</span>
+          </div>
+          <div id="sharedLinksDrawer" class="shared-media-drawer hidden">
+            <div id="sharedLinksList" class="shared-links-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 20px">
+        <button type="button" class="primary-btn" onclick="closeTargetProfileModal()">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="addFriendModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Добавить кента</h3>
+        <button class="close-btn" onclick="closeAddFriendModal()">&times;</button>
+      </div>
+      <p class="modal-desc">Введи уникальный ID кента (например, <b>#78210</b> или его точный никнейм):</p>
+      <form onsubmit="handleAddFriend(event)">
+        <div class="input-group">
+          <input type="text" id="addFriendInput" placeholder="#XXXXX или никнейм" required autocomplete="off">
+        </div>
+        <div id="addFriendError" class="auth-error hidden"></div>
+        <div id="addFriendSuccess" class="auth-success hidden"></div>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" onclick="closeAddFriendModal()">Отмена</button>
+          <button type="submit" class="primary-btn">Добавить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="forwardModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Переслать сообщение</h3>
+        <button class="close-btn" onclick="closeForwardModal()">&times;</button>
+      </div>
+      <div class="input-group" style="margin-bottom:12px;">
+        <input type="text" id="forwardSearchInput" placeholder="Поиск чата..." oninput="filterForwardTargets(this.value)" autocomplete="off">
+      </div>
+      <div id="forwardTargetsList" class="forward-targets-list"></div>
+      <div class="modal-actions" style="margin-top:12px;">
+        <button type="button" class="cancel-btn" onclick="closeForwardModal()">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="createGroupModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Создать новую конфу</h3>
+        <button class="close-btn" onclick="closeCreateGroupModal()">&times;</button>
+      </div>
+      <form onsubmit="handleCreateGroup(event)">
+        <div class="input-group">
+          <label>Название конфы</label>
+          <input type="text" id="groupNameInput" placeholder="Например: Чикен Банда" required maxlength="32" autocomplete="off">
+        </div>
+        <div class="input-group">
+          <label>Пригласить кентов в конфу</label>
+          <div id="groupMembersChecklist" class="group-members-checklist"></div>
+        </div>
+        <div id="createGroupError" class="auth-error hidden"></div>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" onclick="closeCreateGroupModal()">Отмена</button>
+          <button type="submit" class="primary-btn">Создать конфу</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="groupInfoModal" class="modal-overlay hidden">
+    <div class="modal-box profile-modal-box">
+      <div class="modal-header">
+        <h3>Участники конфы</h3>
+        <button class="close-btn" onclick="closeGroupInfoModal()">&times;</button>
+      </div>
+      <div class="profile-card-header">
+        <div id="groupInfoAvatar" class="avatar-circle avatar-large"></div>
+        <div class="profile-header-meta">
+          <div id="groupInfoName" class="profile-preview-name"></div>
+          <div id="groupInfoCount" class="target-status"></div>
+        </div>
+      </div>
+      <div class="profile-bio-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div class="profile-section-label" style="margin-bottom:0;">СПИСОК УЧАСТНИКОВ</div>
+          <button type="button" class="group-add-member-trigger" onclick="toggleAddMembersSection()">+ Добавить</button>
+        </div>
+        <div id="groupAddMembersBox" class="hidden" style="margin-bottom:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px;">
+          <div id="groupAddMembersChecklist" class="group-members-checklist" style="max-height:140px;"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button type="button" class="primary-btn" style="flex:1;padding:6px 12px;font-size:12px;" onclick="submitAddGroupMembers()">Добавить в конфу</button>
+            <button type="button" class="cancel-btn" style="padding:6px 12px;font-size:12px;" onclick="toggleAddMembersSection(false)">Отмена</button>
+          </div>
+        </div>
+        <div id="groupMembersList" class="group-members-list"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="primary-btn" onclick="closeGroupInfoModal()">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="videoNoteModal" class="modal-overlay hidden">
+    <div class="video-note-recorder-card">
+      <div class="video-note-preview-wrap">
+        <video id="videoNotePreview" autoplay muted playsinline class="video-note-preview"></video>
+        <svg class="video-note-progress-ring" viewBox="0 0 100 100">
+          <circle class="ring-bg" cx="50" cy="50" r="46"/>
+          <circle id="videoNoteProgressRing" class="ring-indicator" cx="50" cy="50" r="46"/>
+        </svg>
+        <div id="videoNoteTimer" class="video-note-timer">00:00 / 01:00</div>
+      </div>
+      <div class="video-note-controls">
+        <button type="button" class="vn-ctrl-btn vn-btn-cancel" onclick="cancelVideoNoteRecording()" title="Отменить">✕</button>
+        <button type="button" id="vnSwitchCameraBtn" class="vn-ctrl-btn vn-btn-switch" onclick="switchVideoNoteCamera()" title="Сменить камеру">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.65 0-3 1.35-3 3s1.35 3 3 3 3-1.35 3-3-1.35-3-3-3z"/>
+          </svg>
+        </button>
+        <button type="button" class="vn-ctrl-btn vn-btn-send" onclick="stopAndSendVideoNote()" title="Отправить кружочек">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="imageLightbox" class="lightbox-modal hidden" onclick="closeLightbox()">
+    <div class="lightbox-inner" onclick="event.stopPropagation()">
+      <img id="lightboxImg" src="" alt="Фото">
+      <video id="lightboxVideo" src="" controls autoplay playsinline class="hidden"></video>
+      <button type="button" class="lightbox-close" onclick="closeLightbox()">&times;</button>
+    </div>
+  </div>
+
+  <div id="notificationPromptModal" class="modal-overlay hidden">
+    <div class="modal-box notif-prompt-box">
+      <div class="notif-icon-circle">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor">
+          <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
+        </svg>
+      </div>
+      <h3 class="notif-prompt-title">Включить уведомления?</h3>
+      <p class="notif-prompt-desc">
+        Разреши уведомления, чтобы мгновенно получать сообщения от кентов и входящие звонки, даже когда мессенджер свернут или открыт с ярлыка.
+      </p>
+      <div class="modal-actions notif-prompt-actions">
+        <button type="button" class="cancel-btn" onclick="dismissNotificationPrompt()">Не сейчас</button>
+        <button type="button" class="primary-btn" onclick="requestNotificationPermission()">Включить</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/static/app.js?v=14"></script>
+</body>
+</html>
