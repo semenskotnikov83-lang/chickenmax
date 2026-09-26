@@ -180,6 +180,15 @@ def init_db():
         )
     """)
     db.execute("""
+        CREATE TABLE IF NOT EXISTS friend_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender_id INTEGER NOT NULL,
+            receiver_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(sender_id, receiver_id)
+        )
+    """)
+    db.execute("""
         CREATE TABLE IF NOT EXISTS groups (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -854,6 +863,10 @@ class LoginDto(BaseModel):
 class AddFriendDto(BaseModel):
     query: str
 
+class FriendRequestActionDto(BaseModel):
+    request_id: Optional[int] = None
+    sender_id: Optional[int] = None
+
 class CreateGroupDto(BaseModel):
     name: str
     member_ids: List[int] = []
@@ -1392,7 +1405,7 @@ async def add_friend(dto: AddFriendDto, user_id: int = Depends(get_current_user_
 
     target_id = target["id"]
     if target_id == user_id:
-        raise HTTPException(status_code=400, detail="Нельзя добавить самого себя в друзья")
+        raise HTTPException(status_code=400, detail="Нельзя отправить заявку самому себе")
 
     already = db.fetchone(
         "SELECT 1 FROM friends WHERE user_id = ? AND friend_id = ?",
@@ -1401,15 +1414,148 @@ async def add_friend(dto: AddFriendDto, user_id: int = Depends(get_current_user_
     if already:
         raise HTTPException(status_code=400, detail="Этот кент уже у тебя в друзьях")
 
-    db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id) VALUES (?, ?)", (user_id, target_id))
-    db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id) VALUES (?, ?)", (target_id, user_id))
+    # Check if target already sent a request to me -> auto-accept mutually!
+    incoming_req = db.fetchone("SELECT id FROM friend_requests WHERE sender_id = ? AND receiver_id = ?", (target_id, user_id))
+    if incoming_req:
+        db.execute("DELETE FROM friend_requests WHERE id = ?", (incoming_req["id"],))
+        db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id) VALUES (?, ?)", (user_id, target_id))
+        db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id) VALUES (?, ?)", (target_id, user_id))
 
+        me = db.fetchone("SELECT id, username, user_code, avatar_color, avatar_url, bio, last_seen FROM users WHERE id = ?", (user_id,))
+        target_online = manager.is_online(target_id)
+        me_online = manager.is_online(user_id)
+
+        await manager.send_to_user(target_id, {
+            "type": "friend_added",
+            "friend": {
+                "id": me["id"],
+                "username": me["username"],
+                "user_code": me["user_code"],
+                "avatar_color": me["avatar_color"],
+                "avatar_url": me["avatar_url"] or "",
+                "bio": me["bio"] or "",
+                "is_online": me_online,
+                "status_text": format_last_seen(me["last_seen"], me_online),
+                "unread_count": 0
+            }
+        })
+
+        return {
+            "status": "accepted",
+            "message": "Взаимная заявка! Кент добавлен в друзья.",
+            "friend": {
+                "id": target["id"],
+                "username": target["username"],
+                "user_code": target["user_code"],
+                "avatar_color": target["avatar_color"],
+                "avatar_url": target["avatar_url"] or "",
+                "bio": target["bio"] or "",
+                "is_online": target_online,
+                "status_text": format_last_seen(target["last_seen"], target_online),
+                "unread_count": 0
+            }
+        }
+
+    # Check if request already sent
+    already_sent = db.fetchone("SELECT 1 FROM friend_requests WHERE sender_id = ? AND receiver_id = ?", (user_id, target_id))
+    if already_sent:
+        raise HTTPException(status_code=400, detail="Заявка этому кенту уже отправлена")
+
+    db.execute("INSERT INTO friend_requests (sender_id, receiver_id) VALUES (?, ?)", (user_id, target_id))
     me = db.fetchone("SELECT id, username, user_code, avatar_color, avatar_url, bio, last_seen FROM users WHERE id = ?", (user_id,))
 
-    target_online = manager.is_online(target_id)
-    me_online = manager.is_online(user_id)
-
+    # Realtime notification
     await manager.send_to_user(target_id, {
+        "type": "friend_request_received",
+        "request": {
+            "sender_id": user_id,
+            "username": me["username"],
+            "user_code": me["user_code"],
+            "avatar_color": me["avatar_color"],
+            "avatar_url": me["avatar_url"] or "",
+            "bio": me["bio"] or ""
+        }
+    })
+    send_web_push_to_user(target_id, "Заявка в друзья", f"📩 {me['username']} хочет добавить тебя в друзья!", sender_id=user_id)
+
+    return {"status": "pending", "message": "Заявка в друзья успешно отправлена!"}
+
+@app.get("/api/friends/requests")
+def get_friend_requests(user_id: int = Depends(get_current_user_id)):
+    incoming_rows = db.fetchall("""
+        SELECT fr.id as request_id, u.id as user_id, u.username, u.user_code, u.avatar_color, u.avatar_url, u.bio, u.last_seen, fr.created_at
+        FROM friend_requests fr
+        JOIN users u ON u.id = fr.sender_id
+        WHERE fr.receiver_id = ?
+        ORDER BY fr.id DESC
+    """, (user_id,))
+
+    outgoing_rows = db.fetchall("""
+        SELECT fr.id as request_id, u.id as user_id, u.username, u.user_code, u.avatar_color, u.avatar_url, u.bio, u.last_seen, fr.created_at
+        FROM friend_requests fr
+        JOIN users u ON u.id = fr.receiver_id
+        WHERE fr.sender_id = ?
+        ORDER BY fr.id DESC
+    """, (user_id,))
+
+    incoming = []
+    for r in incoming_rows:
+        is_online = manager.is_online(r["user_id"])
+        incoming.append({
+            "request_id": r["request_id"],
+            "id": r["user_id"],
+            "username": r["username"],
+            "user_code": r["user_code"],
+            "avatar_color": r["avatar_color"],
+            "avatar_url": r["avatar_url"] or "",
+            "bio": r["bio"] or "",
+            "is_online": is_online,
+            "status_text": format_last_seen(r["last_seen"], is_online),
+            "created_at": str(r["created_at"])
+        })
+
+    outgoing = []
+    for r in outgoing_rows:
+        is_online = manager.is_online(r["user_id"])
+        outgoing.append({
+            "request_id": r["request_id"],
+            "id": r["user_id"],
+            "username": r["username"],
+            "user_code": r["user_code"],
+            "avatar_color": r["avatar_color"],
+            "avatar_url": r["avatar_url"] or "",
+            "bio": r["bio"] or "",
+            "is_online": is_online,
+            "status_text": format_last_seen(r["last_seen"], is_online),
+            "created_at": str(r["created_at"])
+        })
+
+    return {"incoming": incoming, "outgoing": outgoing}
+
+@app.post("/api/friends/requests/accept")
+async def accept_friend_request(dto: FriendRequestActionDto, user_id: int = Depends(get_current_user_id)):
+    req = None
+    if dto.request_id:
+        req = db.fetchone("SELECT id, sender_id, receiver_id FROM friend_requests WHERE id = ? AND receiver_id = ?", (dto.request_id, user_id))
+    elif dto.sender_id:
+        req = db.fetchone("SELECT id, sender_id, receiver_id FROM friend_requests WHERE sender_id = ? AND receiver_id = ?", (dto.sender_id, user_id))
+
+    if not req:
+        raise HTTPException(status_code=404, detail="Заявка не найдена")
+
+    sender_id = req["sender_id"]
+    db.execute("DELETE FROM friend_requests WHERE id = ?", (req["id"],))
+    db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id) VALUES (?, ?)", (user_id, sender_id))
+    db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id) VALUES (?, ?)", (sender_id, user_id))
+
+    me = db.fetchone("SELECT id, username, user_code, avatar_color, avatar_url, bio, last_seen FROM users WHERE id = ?", (user_id,))
+    sender = db.fetchone("SELECT id, username, user_code, avatar_color, avatar_url, bio, last_seen FROM users WHERE id = ?", (sender_id,))
+
+    me_online = manager.is_online(user_id)
+    sender_online = manager.is_online(sender_id)
+
+    # Notify the sender in realtime
+    await manager.send_to_user(sender_id, {
         "type": "friend_added",
         "friend": {
             "id": me["id"],
@@ -1423,18 +1569,30 @@ async def add_friend(dto: AddFriendDto, user_id: int = Depends(get_current_user_
             "unread_count": 0
         }
     })
+    send_web_push_to_user(sender_id, "Заявка принята!", f"✅ {me['username']} принял вашу заявку в друзья", sender_id=user_id)
 
     return {
-        "id": target["id"],
-        "username": target["username"],
-        "user_code": target["user_code"],
-        "avatar_color": target["avatar_color"],
-        "avatar_url": target["avatar_url"] or "",
-        "bio": target["bio"] or "",
-        "is_online": target_online,
-        "status_text": format_last_seen(target["last_seen"], target_online),
-        "unread_count": 0
+        "status": "ok",
+        "friend": {
+            "id": sender["id"],
+            "username": sender["username"],
+            "user_code": sender["user_code"],
+            "avatar_color": sender["avatar_color"],
+            "avatar_url": sender["avatar_url"] or "",
+            "bio": sender["bio"] or "",
+            "is_online": sender_online,
+            "status_text": format_last_seen(sender["last_seen"], sender_online),
+            "unread_count": 0
+        }
     }
+
+@app.post("/api/friends/requests/reject")
+async def reject_friend_request(dto: FriendRequestActionDto, user_id: int = Depends(get_current_user_id)):
+    if dto.request_id:
+        db.execute("DELETE FROM friend_requests WHERE id = ? AND (receiver_id = ? OR sender_id = ?)", (dto.request_id, user_id, user_id))
+    elif dto.sender_id:
+        db.execute("DELETE FROM friend_requests WHERE ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))", (dto.sender_id, user_id, user_id, dto.sender_id))
+    return {"status": "ok"}
 
 def get_message_reactions(message_ids: list) -> dict:
     if not message_ids:
@@ -2377,7 +2535,10 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                 if msg_type == "call_offer":
                     caller = db.fetchone("SELECT username FROM users WHERE id = ?", (user_id,))
                     caller_name = caller["username"] if caller else "Пользователь"
-                    send_web_push_to_user(receiver_id, "Входящий звонок", f"📞 Звонит {caller_name}", sender_id=user_id)
+                    is_vid = bool(data.get("is_video"))
+                    push_title = "Входящий видеозвонок" if is_vid else "Входящий звонок"
+                    push_body = f"📹 Видеозвонок от {caller_name}" if is_vid else f"📞 Звонит {caller_name}"
+                    send_web_push_to_user(receiver_id, push_title, push_body, sender_id=user_id)
 
             elif msg_type == "read":
                 sender_id = int(data.get("sender_id"))

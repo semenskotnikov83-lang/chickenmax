@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6875f5"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="chick" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#facc15"/>
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="12" fill="url(#bg)"/>
+  <!-- Crest -->
+  <path d="M24 7V13M19 8.5L23 13.5M29 8.5L25 13.5" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+  <!-- Head / Body -->
+  <circle cx="24" cy="24" r="11" fill="url(#chick)"/>
+  <!-- Beak -->
+  <path d="M24 24L20 28.5H28L24 24Z" fill="#ec4899"/>
+  <!-- Eyes -->
+  <circle cx="20.5" cy="21" r="1.8" fill="#1e1b4b"/>
+  <circle cx="27.5" cy="21" r="1.8" fill="#1e1b4b"/>
+  <circle cx="21" cy="20.4" r="0.6" fill="#ffffff"/>
+  <circle cx="28" cy="20.4" r="0.6" fill="#ffffff"/>
+  <!-- Cheeks -->
+  <circle cx="17" cy="24.5" r="1.6" fill="#f472b6" opacity="0.8"/>
+  <circle cx="31" cy="24.5" r="1.6" fill="#f472b6" opacity="0.8"/>
+  <!-- Bowtie -->
+  <path d="M20 36L24 38L28 36L28 40L24 38L20 40Z" fill="#38bdf8"/>
+  <circle cx="24" cy="38" r="1.2" fill="#0284c7"/>
+</svg>

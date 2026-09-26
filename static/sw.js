@@ -1,9 +1,10 @@
-const CACHE_NAME = "chickenmax-v17";
+const CACHE_NAME = "chickenmax-v22";
 const STATIC_ASSETS = [
   "/",
   "/static/style.css",
   "/static/app.js",
   "/static/manifest.json",
+  "/static/favicon.svg",
   "/static/icon-192.png",
   "/static/icon-512.png"
 ];

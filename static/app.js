@@ -2,6 +2,8 @@ const state = {
   token: localStorage.getItem("chicken_token") || null,
   user: null,
   friends: [],
+  friendRequests: { incoming: [], outgoing: [] },
+  friendModalTab: "find",
   groups: [],
   activeFriend: null,
   activeGroup: null,
@@ -36,9 +38,13 @@ const state = {
   call: {
     peer: null,
     localStream: null,
+    remoteStream: null,
     targetId: null,
     targetUser: null,
     isCaller: false,
+    isVideo: false,
+    cameraOff: false,
+    facingMode: "user",
     timerInterval: null,
     seconds: 0,
     isMuted: false,
@@ -57,49 +63,49 @@ const state = {
 };
 
 const EMOJIS = [
-  "👍", "👎", "❤️", "🔥", "😂", "🤣", "💀", "🐔", "🐣", "🍗",
-  "🤡", "💩", "🚀", "😎", "🥳", "🥺", "😡", "🤫", "🤝", "👑",
-  "💯", "✨", "⚡", "🎯", "👀", "😴", "🤮", "🤖", "👾", "🎮",
-  "💣", "💎", "😀", "😃", "😄", "😁", "😆", "😅", "🙂", "🙃",
-  "😉", "😊", "😇", "🥰", "😍", "🤩", "😘", "😗", "😚", "😙",
-  "😋", "😛", "😜", "🤪", "😝", "🤑", "🤗", "🤭", "🤔", "🤐",
-  "🤨", "😐", "😑", "😶", "😏", "😒", "🙄", "😬", "🤥", "😌",
-  "😔", "😪", "🤤", "😷", "🤒", "🤕", "🤢", "🤧", "🥵", "🥶",
-  "🥴", "😵", "🤯", "🤠", "🤓", "🧐", "😕", "😟", "🙁", "☹️",
-  "😮", "😯", "😲", "😳", "😦", "😧", "😨", "😰", "😥", "😢",
-  "😭", "😱", "😖", "😣", "😞", "😓", "😩", "😫", "🥱", "😤",
-  "😠", "🤬", "😈", "👿", "☠️", "👹", "👺", "👻", "👽", "👋",
-  "🤚", "🖐️", "✋", "🖖", "👌", "🤏", "✌️", "🤞", "🤟", "🤘",
-  "🤙", "👈", "👉", "👆", "🖕", "👇", "☝️", "✊", "👊", "🤛",
-  "🤜", "👏", "🙌", "👐", "🤲", "🙏", "✍️", "💅", "🤳", "💪",
-  "🦾", "🦿", "🦵", "🦶", "👂", "🦻", "👃", "🧠", "🦷", "🦴",
-  "👁️", "👅", "👄", "🐥", "🐓", "🥚", "🍳", "🌾", "🦊", "🐺",
-  "🐶", "🐱", "🐭", "🐹", "🐰", "🐻", "🐼", "🐨", "🐯", "🦁",
-  "🐮", "🐷", "🐽", "🐸", "🐵", "🙈", "🙉", "🙊", "🐒", "🦍",
-  "🦧", "🦝", "🐗", "🐴", "🦄", "🐝", "🐛", "🦋", "🐌", "🐞",
-  "🐜", "🕷️", "🕸️", "🦂", "🐢", "🐍", "🦎", "🦖", "🦕", "🐙",
-  "🦑", "🦐", "🦞", "🦀", "🐡", "🐠", "🐟", "🐬", "🐳", "🐋",
-  "🦈", "🐊", "🦅", "🦆", "🦢", "🦉", "🦩", "🦚", "🦜", "🦇",
-  "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❤️‍🔥",
-  "❤️‍🩹", "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟",
-  "💢", "💥", "💫", "💦", "💨", "🕳️", "💬", "🗨️", "🗯️", "💭",
-  "💤", "🌟", "⭐", "🌠", "🍕", "🍔", "🍟", "🌭", "🍿", "🧂",
-  "🥓", "🥩", "🍖", "🧀", "🥞", "🧇", "🍞", "🥐", "🥖", "🥨",
-  "🥯", "🥗", "🥙", "🥪", "🌮", "🌯", "🥫", "🍝", "🍜", "🍲",
-  "🍛", "🍣", "🍱", "🥟", "🍤", "🍙", "🍧", "🍨", "🍦", "🥧",
-  "🧁", "🍰", "🎂", "🍮", "🍭", "🍬", "🍫", "🍩", "🍪", "☕",
-  "🍵", "🧃", "🥤", "🍺", "🍻", "🥂", "🍷", "🥃", "🍸", "🍹",
-  "🍾", "🧊", "🕹️", "🎲", "🎰", "🎳", "🏆", "🥇", "🥈", "🥉",
-  "🏅", "🎖️", "🥊", "🥋", "🤺", "🛹", "🏹", "🎣", "🔫", "🧨",
-  "🔪", "🗡️", "⚔️", "🛡️", "🪓", "💻", "🖥️", "📱", "⌨️", "🖱️",
-  "💽", "💾", "💿", "🔋", "🔌", "💡", "🔦", "💵", "💸", "💳",
-  "⚖️", "🧰", "🔧", "🔨", "⚒️", "🛠️", "⛏️", "⚙️", "🗝️", "🔑",
-  "🔒", "🔓", "🗿", "🕶️", "🧲", "🧬", "🧪", "🔬", "🔭", "📡",
-  "🛸", "☢️", "☣️", "🚬"
+  "рџ‘Ќ", "рџ‘Ћ", "вќ¤пёЏ", "рџ”Ґ", "рџ‚", "рџ¤Ј", "рџ’Ђ", "рџђ”", "рџђЈ", "рџЌ—",
+  "рџ¤Ў", "рџ’©", "рџљЂ", "рџЋ", "рџҐі", "рџҐє", "рџЎ", "рџ¤«", "рџ¤ќ", "рџ‘‘",
+  "рџ’Ї", "вњЁ", "вљЎ", "рџЋЇ", "рџ‘Ђ", "рџґ", "рџ¤®", "рџ¤–", "рџ‘ѕ", "рџЋ®",
+  "рџ’Ј", "рџ’Ћ", "рџЂ", "рџѓ", "рџ„", "рџЃ", "рџ†", "рџ…", "рџ™‚", "рџ™ѓ",
+  "рџ‰", "рџЉ", "рџ‡", "рџҐ°", "рџЌ", "рџ¤©", "рџ", "рџ—", "рџљ", "рџ™",
+  "рџ‹", "рџ›", "рџњ", "рџ¤Є", "рџќ", "рџ¤‘", "рџ¤—", "рџ¤­", "рџ¤”", "рџ¤ђ",
+  "рџ¤Ё", "рџђ", "рџ‘", "рџ¶", "рџЏ", "рџ’", "рџ™„", "рџ¬", "рџ¤Ґ", "рџЊ",
+  "рџ”", "рџЄ", "рџ¤¤", "рџ·", "рџ¤’", "рџ¤•", "рџ¤ў", "рџ¤§", "рџҐµ", "рџҐ¶",
+  "рџҐґ", "рџµ", "рџ¤Ї", "рџ¤ ", "рџ¤“", "рџ§ђ", "рџ•", "рџџ", "рџ™Ѓ", "в№пёЏ",
+  "рџ®", "рџЇ", "рџІ", "рџі", "рџ¦", "рџ§", "рџЁ", "рџ°", "рџҐ", "рџў",
+  "рџ­", "рџ±", "рџ–", "рџЈ", "рџћ", "рџ“", "рџ©", "рџ«", "рџҐ±", "рџ¤",
+  "рџ ", "рџ¤¬", "рџ€", "рџ‘ї", "в пёЏ", "рџ‘№", "рџ‘є", "рџ‘»", "рџ‘Ѕ", "рџ‘‹",
+  "рџ¤љ", "рџ–ђпёЏ", "вњ‹", "рџ––", "рџ‘Њ", "рџ¤Џ", "вњЊпёЏ", "рџ¤ћ", "рџ¤џ", "рџ¤",
+  "рџ¤™", "рџ‘€", "рџ‘‰", "рџ‘†", "рџ–•", "рџ‘‡", "вќпёЏ", "вњЉ", "рџ‘Љ", "рџ¤›",
+  "рџ¤њ", "рџ‘Џ", "рџ™Њ", "рџ‘ђ", "рџ¤І", "рџ™Џ", "вњЌпёЏ", "рџ’…", "рџ¤і", "рџ’Є",
+  "рџ¦ѕ", "рџ¦ї", "рџ¦µ", "рџ¦¶", "рџ‘‚", "рџ¦»", "рџ‘ѓ", "рџ§ ", "рџ¦·", "рџ¦ґ",
+  "рџ‘ЃпёЏ", "рџ‘…", "рџ‘„", "рџђҐ", "рџђ“", "рџҐљ", "рџЌі", "рџЊѕ", "рџ¦Љ", "рџђє",
+  "рџђ¶", "рџђ±", "рџђ­", "рџђ№", "рџђ°", "рџђ»", "рџђј", "рџђЁ", "рџђЇ", "рџ¦Ѓ",
+  "рџђ®", "рџђ·", "рџђЅ", "рџђё", "рџђµ", "рџ™€", "рџ™‰", "рџ™Љ", "рџђ’", "рџ¦Ќ",
+  "рџ¦§", "рџ¦ќ", "рџђ—", "рџђґ", "рџ¦„", "рџђќ", "рџђ›", "рџ¦‹", "рџђЊ", "рџђћ",
+  "рџђњ", "рџ•·пёЏ", "рџ•ёпёЏ", "рџ¦‚", "рџђў", "рџђЌ", "рџ¦Ћ", "рџ¦–", "рџ¦•", "рџђ™",
+  "рџ¦‘", "рџ¦ђ", "рџ¦ћ", "рџ¦Ђ", "рџђЎ", "рџђ ", "рџђџ", "рџђ¬", "рџђі", "рџђ‹",
+  "рџ¦€", "рџђЉ", "рџ¦…", "рџ¦†", "рџ¦ў", "рџ¦‰", "рџ¦©", "рџ¦љ", "рџ¦њ", "рџ¦‡",
+  "рџ§Ў", "рџ’›", "рџ’љ", "рџ’™", "рџ’њ", "рџ–¤", "рџ¤Ќ", "рџ¤Ћ", "рџ’”", "вќ¤пёЏвЂЌрџ”Ґ",
+  "вќ¤пёЏвЂЌрџ©№", "вќЈпёЏ", "рџ’•", "рџ’ћ", "рџ’“", "рџ’—", "рџ’–", "рџ’", "рџ’ќ", "рџ’џ",
+  "рџ’ў", "рџ’Ґ", "рџ’«", "рџ’¦", "рџ’Ё", "рџ•іпёЏ", "рџ’¬", "рџ—ЁпёЏ", "рџ—ЇпёЏ", "рџ’­",
+  "рџ’¤", "рџЊџ", "в­ђ", "рџЊ ", "рџЌ•", "рџЌ”", "рџЌџ", "рџЊ­", "рџЌї", "рџ§‚",
+  "рџҐ“", "рџҐ©", "рџЌ–", "рџ§Ђ", "рџҐћ", "рџ§‡", "рџЌћ", "рџҐђ", "рџҐ–", "рџҐЁ",
+  "рџҐЇ", "рџҐ—", "рџҐ™", "рџҐЄ", "рџЊ®", "рџЊЇ", "рџҐ«", "рџЌќ", "рџЌњ", "рџЌІ",
+  "рџЌ›", "рџЌЈ", "рџЌ±", "рџҐџ", "рџЌ¤", "рџЌ™", "рџЌ§", "рџЌЁ", "рџЌ¦", "рџҐ§",
+  "рџ§Ѓ", "рџЌ°", "рџЋ‚", "рџЌ®", "рџЌ­", "рџЌ¬", "рџЌ«", "рџЌ©", "рџЌЄ", "в•",
+  "рџЌµ", "рџ§ѓ", "рџҐ¤", "рџЌє", "рџЌ»", "рџҐ‚", "рџЌ·", "рџҐѓ", "рџЌё", "рџЌ№",
+  "рџЌѕ", "рџ§Љ", "рџ•№пёЏ", "рџЋІ", "рџЋ°", "рџЋі", "рџЏ†", "рџҐ‡", "рџҐ€", "рџҐ‰",
+  "рџЏ…", "рџЋ–пёЏ", "рџҐЉ", "рџҐ‹", "рџ¤є", "рџ›№", "рџЏ№", "рџЋЈ", "рџ”«", "рџ§Ё",
+  "рџ”Є", "рџ—ЎпёЏ", "вљ”пёЏ", "рџ›ЎпёЏ", "рџЄ“", "рџ’»", "рџ–ҐпёЏ", "рџ“±", "вЊЁпёЏ", "рџ–±пёЏ",
+  "рџ’Ѕ", "рџ’ѕ", "рџ’ї", "рџ”‹", "рџ”Њ", "рџ’Ў", "рџ”¦", "рџ’µ", "рџ’ё", "рџ’і",
+  "вљ–пёЏ", "рџ§°", "рџ”§", "рџ”Ё", "вљ’пёЏ", "рџ› пёЏ", "в›ЏпёЏ", "вљ™пёЏ", "рџ—ќпёЏ", "рџ”‘",
+  "рџ”’", "рџ”“", "рџ—ї", "рџ•¶пёЏ", "рџ§І", "рџ§¬", "рџ§Є", "рџ”¬", "рџ”­", "рџ“Ў",
+  "рџ›ё", "вўпёЏ", "вЈпёЏ", "рџљ¬"
 ];
 
 const EMOJI_CATEGORIES = [
-  { name: "Все", emojis: EMOJIS }
+  { name: "Р’СЃРµ", emojis: EMOJIS }
 ];
 
 const VOICE_PLAY_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="transform:translateX(1px);display:block;"><path d="M8 5.14v13.72a1.2 1.2 0 0 0 1.83 1.03l11.2-6.86a1.2 1.2 0 0 0 0-2.06L9.83 4.11A1.2 1.2 0 0 0 8 5.14z"/></svg>`;
@@ -107,61 +113,61 @@ const VOICE_PAUSE_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="
 const VOICE_TRANSCRIBE_ICON = `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display:block;"><path d="M5 17h2l.9-2.6h4.2l.9 2.6h2L10.8 5.5h-1.6L5 17zm3.6-4.3l1.4-4.2 1.4 4.2H8.6z"/><path d="M17 9.5c.8.7 1.3 1.6 1.3 2.5s-.5 1.8-1.3 2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19.8 7c1.3 1.3 2.2 3.1 2.2 5s-.9 3.7-2.2 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
 const VOICE_TRANSCRIBE_LOADING_ICON = `<svg class="voice-transcribe-spinner" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="display:block;"><circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.2)"/><path d="M12 3a9 9 0 0 1 9 9" stroke="currentColor"/></svg>`;
 
-const QUICK_REACTIONS = ["👍", "❤️", "🔥", "😂", "🐔", "💀", "🎉", "🤡", "👎"];
+const QUICK_REACTIONS = ["рџ‘Ќ", "вќ¤пёЏ", "рџ”Ґ", "рџ‚", "рџђ”", "рџ’Ђ", "рџЋ‰", "рџ¤Ў", "рџ‘Ћ"];
 
 const STICKER_CATEGORIES = [
   {
-    name: "🐔 ChickenMax Clan",
+    name: "рџђ” ChickenMax Clan",
     stickers: [
-      "🐔", "🍗", "🐣", "🐥", "🐓", "🥚",
-      "🍳", "🌾", "🪶", "🦊", "🐺", "🥊",
-      "👑", "🔥", "🕶️", "🏆", "🪺", "🦅",
-      "🦉", "🎯"
+      "рџђ”", "рџЌ—", "рџђЈ", "рџђҐ", "рџђ“", "рџҐљ",
+      "рџЌі", "рџЊѕ", "рџЄ¶", "рџ¦Љ", "рџђє", "рџҐЉ",
+      "рџ‘‘", "рџ”Ґ", "рџ•¶пёЏ", "рџЏ†", "рџЄє", "рџ¦…",
+      "рџ¦‰", "рџЋЇ"
     ]
   },
   {
-    name: "🗿 Мемы и Чэды",
+    name: "рџ—ї РњРµРјС‹ Рё Р§СЌРґС‹",
     stickers: [
-      "🗿", "🫡", "💀", "☠️", "🤡", "💩",
-      "😎", "🤓", "🕶️", "🤌", "🖕", "🤝",
-      "👀", "🧠", "🧢", "🍿", "🤑", "😈",
-      "🫠", "🫣"
+      "рџ—ї", "рџ«Ў", "рџ’Ђ", "в пёЏ", "рџ¤Ў", "рџ’©",
+      "рџЋ", "рџ¤“", "рџ•¶пёЏ", "рџ¤Њ", "рџ–•", "рџ¤ќ",
+      "рџ‘Ђ", "рџ§ ", "рџ§ў", "рџЌї", "рџ¤‘", "рџ€",
+      "рџ« ", "рџ«Ј"
     ]
   },
   {
-    name: "🎮 Раст и PVP",
+    name: "рџЋ® Р Р°СЃС‚ Рё PVP",
     stickers: [
-      "💣", "🧨", "🔫", "🗡️", "⚔️", "🛡️",
-      "🪓", "🏹", "🎯", "🎮", "🕹️", "👾",
-      "🥊", "🥋", "☣️", "☢️", "💎", "🏆",
-      "🥇", "🪙"
+      "рџ’Ј", "рџ§Ё", "рџ”«", "рџ—ЎпёЏ", "вљ”пёЏ", "рџ›ЎпёЏ",
+      "рџЄ“", "рџЏ№", "рџЋЇ", "рџЋ®", "рџ•№пёЏ", "рџ‘ѕ",
+      "рџҐЉ", "рџҐ‹", "вЈпёЏ", "вўпёЏ", "рџ’Ћ", "рџЏ†",
+      "рџҐ‡", "рџЄ™"
     ]
   },
   {
-    name: "🔥 Эмоции и Реакции",
+    name: "рџ”Ґ Р­РјРѕС†РёРё Рё Р РµР°РєС†РёРё",
     stickers: [
-      "🥳", "😭", "😱", "🤯", "😡", "🤬",
-      "🤮", "🥺", "🥶", "🥵", "😴", "🤫",
-      "🤪", "🤤", "🤢", "🤧", "🤐", "🙄",
-      "😬", "❤️‍🔥"
+      "рџҐі", "рџ­", "рџ±", "рџ¤Ї", "рџЎ", "рџ¤¬",
+      "рџ¤®", "рџҐє", "рџҐ¶", "рџҐµ", "рџґ", "рџ¤«",
+      "рџ¤Є", "рџ¤¤", "рџ¤ў", "рџ¤§", "рџ¤ђ", "рџ™„",
+      "рџ¬", "вќ¤пёЏвЂЌрџ”Ґ"
     ]
   },
   {
-    name: "💎 Чилл и Флекс",
+    name: "рџ’Ћ Р§РёР»Р» Рё Р¤Р»РµРєСЃ",
     stickers: [
-      "🍕", "🍔", "🍟", "🌭", "🥓", "🥩",
-      "🍣", "🍩", "🍺", "🍻", "🥂", "🍷",
-      "🥃", "☕", "🧋", "🚬", "💸", "💵",
-      "🚀", "🛸"
+      "рџЌ•", "рџЌ”", "рџЌџ", "рџЊ­", "рџҐ“", "рџҐ©",
+      "рџЌЈ", "рџЌ©", "рџЌє", "рџЌ»", "рџҐ‚", "рџЌ·",
+      "рџҐѓ", "в•", "рџ§‹", "рџљ¬", "рџ’ё", "рџ’µ",
+      "рџљЂ", "рџ›ё"
     ]
   },
   {
-    name: "🐺 Звери и Существа",
+    name: "рџђє Р—РІРµСЂРё Рё РЎСѓС‰РµСЃС‚РІР°",
     stickers: [
-      "🐺", "🦊", "🐸", "🐵", "🦍", "🦧",
-      "🦁", "🐯", "🐻", "🐼", "🐨", "🦇",
-      "🐍", "🦎", "🦖", "🦕", "🦈", "🐊",
-      "🐙", "🦄"
+      "рџђє", "рџ¦Љ", "рџђё", "рџђµ", "рџ¦Ќ", "рџ¦§",
+      "рџ¦Ѓ", "рџђЇ", "рџђ»", "рџђј", "рџђЁ", "рџ¦‡",
+      "рџђЌ", "рџ¦Ћ", "рџ¦–", "рџ¦•", "рџ¦€", "рџђЉ",
+      "рџђ™", "рџ¦„"
     ]
   }
 ];
@@ -169,15 +175,15 @@ const STICKER_CATEGORIES = [
 const STICKERS = STICKER_CATEGORIES.flatMap((c) => c.stickers);
 
 const GIFS = [
-  { title: "Курица танцует", url: "https://media.giphy.com/media/unQ3IJU2RG7DO/giphy.gif" },
-  { title: "Чикен паника", url: "https://media.giphy.com/media/10hexb48cC1e0M/giphy.gif" },
-  { title: "Крутой петух", url: "https://media.giphy.com/media/26gsu7e96F8bV6dCo/giphy.gif" },
-  { title: "Попкорн", url: "https://media.giphy.com/media/gl0mkIZOW6Nwc/giphy.gif" },
-  { title: "Огонь", url: "https://media.giphy.com/media/nrXif9YExO9EI/giphy.gif" },
-  { title: "Шок", url: "https://media.giphy.com/media/5VKbvrjxpVJCM/giphy.gif" },
-  { title: "Кот танцует", url: "https://media.giphy.com/media/JPbDhAzWTv45Z61yHV/giphy.gif" },
-  { title: "Дай пять", url: "https://media.giphy.com/media/3oEjHV0z8S7WM4MwnK/giphy.gif" },
-  { title: "Аплодисменты", url: "https://media.giphy.com/media/nbvFVPiEiJH6Q/giphy.gif" }
+  { title: "РљСѓСЂРёС†Р° С‚Р°РЅС†СѓРµС‚", url: "https://media.giphy.com/media/unQ3IJU2RG7DO/giphy.gif" },
+  { title: "Р§РёРєРµРЅ РїР°РЅРёРєР°", url: "https://media.giphy.com/media/10hexb48cC1e0M/giphy.gif" },
+  { title: "РљСЂСѓС‚РѕР№ РїРµС‚СѓС…", url: "https://media.giphy.com/media/26gsu7e96F8bV6dCo/giphy.gif" },
+  { title: "РџРѕРїРєРѕСЂРЅ", url: "https://media.giphy.com/media/gl0mkIZOW6Nwc/giphy.gif" },
+  { title: "РћРіРѕРЅСЊ", url: "https://media.giphy.com/media/nrXif9YExO9EI/giphy.gif" },
+  { title: "РЁРѕРє", url: "https://media.giphy.com/media/5VKbvrjxpVJCM/giphy.gif" },
+  { title: "РљРѕС‚ С‚Р°РЅС†СѓРµС‚", url: "https://media.giphy.com/media/JPbDhAzWTv45Z61yHV/giphy.gif" },
+  { title: "Р”Р°Р№ РїСЏС‚СЊ", url: "https://media.giphy.com/media/3oEjHV0z8S7WM4MwnK/giphy.gif" },
+  { title: "РђРїР»РѕРґРёСЃРјРµРЅС‚С‹", url: "https://media.giphy.com/media/nbvFVPiEiJH6Q/giphy.gif" }
 ];
 
 const RTC_CONFIG = {
@@ -375,7 +381,7 @@ function applyOledTheme(enabled) {
     btn.innerHTML = enabled
       ? `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`
       : `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
-    btn.title = enabled ? "Включить обычную тему" : "OLED Pure Black режим";
+    btn.title = enabled ? "Р’РєР»СЋС‡РёС‚СЊ РѕР±С‹С‡РЅСѓСЋ С‚РµРјСѓ" : "OLED Pure Black СЂРµР¶РёРј";
   }
 }
 
@@ -389,7 +395,7 @@ function switchAuthTab(mode) {
   authMode = mode;
   document.getElementById("tabLogin").classList.toggle("active", mode === "login");
   document.getElementById("tabRegister").classList.toggle("active", mode === "register");
-  document.getElementById("authSubmitBtn").textContent = mode === "login" ? "Войти в курятник" : "Создать аккаунт";
+  document.getElementById("authSubmitBtn").textContent = mode === "login" ? "Р’РѕР№С‚Рё РІ РєСѓСЂСЏС‚РЅРёРє" : "РЎРѕР·РґР°С‚СЊ Р°РєРєР°СѓРЅС‚";
   document.getElementById("authError").classList.add("hidden");
 }
 
@@ -410,7 +416,7 @@ async function handleAuth(event) {
     });
     const data = await res.json();
     if (!res.ok) {
-      errEl.textContent = data.detail || "Ошибка авторизации";
+      errEl.textContent = data.detail || "РћС€РёР±РєР° Р°РІС‚РѕСЂРёР·Р°С†РёРё";
       errEl.classList.remove("hidden");
       return;
     }
@@ -419,7 +425,7 @@ async function handleAuth(event) {
     localStorage.setItem("chicken_token", state.token);
     initApp();
   } catch (err) {
-    errEl.textContent = "Сервер недоступен. Проверьте соединение.";
+    errEl.textContent = "РЎРµСЂРІРµСЂ РЅРµРґРѕСЃС‚СѓРїРµРЅ. РџСЂРѕРІРµСЂСЊС‚Рµ СЃРѕРµРґРёРЅРµРЅРёРµ.";
     errEl.classList.remove("hidden");
   }
 }
@@ -726,12 +732,12 @@ async function handleAvatarFile(event) {
   if (!file) return;
 
   if (file.size > 15 * 1024 * 1024) {
-    showToast("Файл слишком большой (максимум 15 МБ)");
+    showToast("Р¤Р°Р№Р» СЃР»РёС€РєРѕРј Р±РѕР»СЊС€РѕР№ (РјР°РєСЃРёРјСѓРј 15 РњР‘)");
     event.target.value = "";
     return;
   }
 
-  showToast("Сохранение аватара...");
+  showToast("РЎРѕС…СЂР°РЅРµРЅРёРµ Р°РІР°С‚Р°СЂР°...");
 
   try {
     const dataUrl = await resizeImageToDataUrl(file, 256, 256, 0.85);
@@ -745,16 +751,16 @@ async function handleAvatarFile(event) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      showToast(data.detail || "Ошибка сохранения аватара");
+      showToast(data.detail || "РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ Р°РІР°С‚Р°СЂР°");
       event.target.value = "";
       return;
     }
     state.user.avatar_url = data.avatar_url || dataUrl;
     updateAvatarElement(document.getElementById("myAvatar"), state.user);
     updateAvatarElement(document.getElementById("myProfileAvatar"), state.user);
-    showToast("Аватар успешно сохранен в базе!");
+    showToast("РђРІР°С‚Р°СЂ СѓСЃРїРµС€РЅРѕ СЃРѕС…СЂР°РЅРµРЅ РІ Р±Р°Р·Рµ!");
   } catch (e) {
-    showToast("Ошибка сохранения аватара");
+    showToast("РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ Р°РІР°С‚Р°СЂР°");
   } finally {
     event.target.value = "";
   }
@@ -772,7 +778,7 @@ function openMyProfileModal() {
   const bannerVal = state.user.custom_banner || "linear-gradient(135deg, #1f1c2c, #928dab)";
   const bannerInput = document.getElementById("editProfileBannerInput");
   if (bannerInput) bannerInput.value = bannerVal;
-  document.getElementById("myProfileJoined").textContent = state.user.created_at ? `В ChickenMax с ${state.user.created_at}` : "В ChickenMax с 2024";
+  document.getElementById("myProfileJoined").textContent = state.user.created_at ? `Р’ ChickenMax СЃ ${state.user.created_at}` : "Р’ ChickenMax СЃ 2024";
 
   selectStatusBadge(state.user.custom_status || "", false);
   selectProfileColor(state.user.profile_color || "#5865F2", false);
@@ -845,11 +851,11 @@ async function handleBannerFileSelected(event) {
   const file = event.target.files && event.target.files[0];
   if (!file) return;
   if (file.size > 15 * 1024 * 1024) {
-    showToast("Картинка слишком большая (макс. 15 МБ)");
+    showToast("РљР°СЂС‚РёРЅРєР° СЃР»РёС€РєРѕРј Р±РѕР»СЊС€Р°СЏ (РјР°РєСЃ. 15 РњР‘)");
     return;
   }
   try {
-    showToast("Сохранение баннера...");
+    showToast("РЎРѕС…СЂР°РЅРµРЅРёРµ Р±Р°РЅРЅРµСЂР°...");
     const dataUrl = await resizeImageToDataUrl(file, 800, 260, 0.82);
     const res = await fetch("/api/user/banner", {
       method: "POST",
@@ -866,13 +872,13 @@ async function handleBannerFileSelected(event) {
       if (input) input.value = state.user.custom_banner;
       updateProfilePreview();
       updateMyProfileDisplay();
-      showToast("Баннер сохранен в базе!");
+      showToast("Р‘Р°РЅРЅРµСЂ СЃРѕС…СЂР°РЅРµРЅ РІ Р±Р°Р·Рµ!");
     } else {
       const err = await res.json().catch(() => ({}));
-      showToast(err.detail || "Не удалось загрузить баннер");
+      showToast(err.detail || "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ Р±Р°РЅРЅРµСЂ");
     }
   } catch (e) {
-    showToast("Ошибка сети при загрузке баннера");
+    showToast("РћС€РёР±РєР° СЃРµС‚Рё РїСЂРё Р·Р°РіСЂСѓР·РєРµ Р±Р°РЅРЅРµСЂР°");
   } finally {
     event.target.value = "";
   }
@@ -917,7 +923,7 @@ async function handleSaveProfile(event) {
   succEl.classList.add("hidden");
 
   if (!username) {
-    errEl.textContent = "Никнейм не может быть пустым";
+    errEl.textContent = "РќРёРєРЅРµР№Рј РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РїСѓСЃС‚С‹Рј";
     errEl.classList.remove("hidden");
     return;
   }
@@ -933,7 +939,7 @@ async function handleSaveProfile(event) {
     });
     const data = await res.json();
     if (!res.ok) {
-      errEl.textContent = data.detail || "Не удалось сохранить профиль";
+      errEl.textContent = data.detail || "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ РїСЂРѕС„РёР»СЊ";
       errEl.classList.remove("hidden");
       return;
     }
@@ -946,14 +952,14 @@ async function handleSaveProfile(event) {
 
     updateMyProfileDisplay();
 
-    succEl.textContent = "Профиль успешно обновлен!";
+    succEl.textContent = "РџСЂРѕС„РёР»СЊ СѓСЃРїРµС€РЅРѕ РѕР±РЅРѕРІР»РµРЅ!";
     succEl.classList.remove("hidden");
 
     setTimeout(() => {
       closeMyProfileModal();
     }, 700);
   } catch (e) {
-    errEl.textContent = "Ошибка сети";
+    errEl.textContent = "РћС€РёР±РєР° СЃРµС‚Рё";
     errEl.classList.remove("hidden");
   }
 }
@@ -991,11 +997,11 @@ async function openTargetProfileModal(targetUser) {
   document.getElementById("targetProfileCode").textContent = targetUser.user_code || (targetUser.code ? `#${targetUser.code}` : "");
   
   const statusEl = document.getElementById("targetProfileStatus");
-  statusEl.textContent = targetUser.status_text || (targetUser.is_online ? "в сети" : "был(а) недавно");
+  statusEl.textContent = targetUser.status_text || (targetUser.is_online ? "РІ СЃРµС‚Рё" : "Р±С‹Р»(Р°) РЅРµРґР°РІРЅРѕ");
   statusEl.className = `target-status ${targetUser.is_online ? "online" : ""}`;
   
-  document.getElementById("targetProfileBio").textContent = targetUser.bio || "Пока ничего не написал(а)";
-  document.getElementById("targetProfileCreated").textContent = targetUser.created_at || "недавно";
+  document.getElementById("targetProfileBio").textContent = targetUser.bio || "РџРѕРєР° РЅРёС‡РµРіРѕ РЅРµ РЅР°РїРёСЃР°Р»(Р°)";
+  document.getElementById("targetProfileCreated").textContent = targetUser.created_at || "РЅРµРґР°РІРЅРѕ";
   updateAvatarElement(document.getElementById("targetProfileAvatar"), targetUser);
 
   closeAllSharedMediaDrawers();
@@ -1013,9 +1019,9 @@ async function openTargetProfileModal(targetUser) {
       nameEl.textContent = data.username;
       if (data.profile_color) nameEl.style.color = data.profile_color;
       badgeEl.textContent = data.custom_status || "";
-      document.getElementById("targetProfileBio").textContent = data.bio || "Пока ничего не написал(а)";
-      document.getElementById("targetProfileCreated").textContent = data.created_at || "недавно";
-      statusEl.textContent = data.status_text || (data.is_online ? "в сети" : "был(а) недавно");
+      document.getElementById("targetProfileBio").textContent = data.bio || "РџРѕРєР° РЅРёС‡РµРіРѕ РЅРµ РЅР°РїРёСЃР°Р»(Р°)";
+      document.getElementById("targetProfileCreated").textContent = data.created_at || "РЅРµРґР°РІРЅРѕ";
+      statusEl.textContent = data.status_text || (data.is_online ? "РІ СЃРµС‚Рё" : "Р±С‹Р»(Р°) РЅРµРґР°РІРЅРѕ");
       statusEl.className = `target-status ${data.is_online ? "online" : ""}`;
       updateAvatarElement(document.getElementById("targetProfileAvatar"), data);
       if (bannerEl && data.custom_banner) {
@@ -1049,10 +1055,10 @@ async function openTargetProfileModalById(userId) {
       const data = await res.json();
       openTargetProfileModal(data);
     } else {
-      showToast("Пользователь не найден");
+      showToast("РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ");
     }
   } catch (e) {
-    showToast("Ошибка сети");
+    showToast("РћС€РёР±РєР° СЃРµС‚Рё");
   }
 }
 
@@ -1068,11 +1074,11 @@ function resetSharedMediaCounters() {
   const fc = document.getElementById("sharedFilesCount");
   const voc = document.getElementById("sharedVoicesCount");
   const lc = document.getElementById("sharedLinksCount");
-  if (pc) pc.textContent = "0 фотографий";
-  if (vc) vc.textContent = "0 видео";
-  if (fc) fc.textContent = "0 файлов";
-  if (voc) voc.textContent = "0 голосовых";
-  if (lc) lc.textContent = "0 ссылок";
+  if (pc) pc.textContent = "0 С„РѕС‚РѕРіСЂР°С„РёР№";
+  if (vc) vc.textContent = "0 РІРёРґРµРѕ";
+  if (fc) fc.textContent = "0 С„Р°Р№Р»РѕРІ";
+  if (voc) voc.textContent = "0 РіРѕР»РѕСЃРѕРІС‹С…";
+  if (lc) lc.textContent = "0 СЃСЃС‹Р»РѕРє";
 }
 
 function closeAllSharedMediaDrawers() {
@@ -1094,11 +1100,11 @@ async function loadSharedMediaForTarget(targetId) {
     const fc = document.getElementById("sharedFilesCount");
     const voc = document.getElementById("sharedVoicesCount");
     const lc = document.getElementById("sharedLinksCount");
-    if (pc) pc.textContent = `${data.photos.length} ${pluralize(data.photos.length, "фотография", "фотографии", "фотографий")}`;
-    if (vc) vc.textContent = `${data.videos.length} ${pluralize(data.videos.length, "видео", "видео", "видео")}`;
-    if (fc) fc.textContent = `${data.files.length} ${pluralize(data.files.length, "файл", "файла", "файлов")}`;
-    if (voc) voc.textContent = `${data.voices.length} ${pluralize(data.voices.length, "голосовое", "голосовых", "голосовых")}`;
-    if (lc) lc.textContent = `${data.links.length} ${pluralize(data.links.length, "ссылка", "ссылки", "ссылок")}`;
+    if (pc) pc.textContent = `${data.photos.length} ${pluralize(data.photos.length, "С„РѕС‚РѕРіСЂР°С„РёСЏ", "С„РѕС‚РѕРіСЂР°С„РёРё", "С„РѕС‚РѕРіСЂР°С„РёР№")}`;
+    if (vc) vc.textContent = `${data.videos.length} ${pluralize(data.videos.length, "РІРёРґРµРѕ", "РІРёРґРµРѕ", "РІРёРґРµРѕ")}`;
+    if (fc) fc.textContent = `${data.files.length} ${pluralize(data.files.length, "С„Р°Р№Р»", "С„Р°Р№Р»Р°", "С„Р°Р№Р»РѕРІ")}`;
+    if (voc) voc.textContent = `${data.voices.length} ${pluralize(data.voices.length, "РіРѕР»РѕСЃРѕРІРѕРµ", "РіРѕР»РѕСЃРѕРІС‹С…", "РіРѕР»РѕСЃРѕРІС‹С…")}`;
+    if (lc) lc.textContent = `${data.links.length} ${pluralize(data.links.length, "СЃСЃС‹Р»РєР°", "СЃСЃС‹Р»РєРё", "СЃСЃС‹Р»РѕРє")}`;
   } catch (e) {}
 }
 
@@ -1134,7 +1140,7 @@ function renderSharedMediaCategory(cat) {
     if (!grid) return;
     grid.innerHTML = "";
     if (data.photos.length === 0) {
-      grid.innerHTML = `<div style="grid-column:1/-1;font-size:12px;color:var(--text-muted);padding:8px;text-align:center">Нет фотографий в этом диалоге</div>`;
+      grid.innerHTML = `<div style="grid-column:1/-1;font-size:12px;color:var(--text-muted);padding:8px;text-align:center">РќРµС‚ С„РѕС‚РѕРіСЂР°С„РёР№ РІ СЌС‚РѕРј РґРёР°Р»РѕРіРµ</div>`;
       return;
     }
     data.photos.forEach((p) => {
@@ -1150,7 +1156,7 @@ function renderSharedMediaCategory(cat) {
     if (!list) return;
     list.innerHTML = "";
     if (data.videos.length === 0) {
-      list.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px;text-align:center">Нет видео или кружочков</div>`;
+      list.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px;text-align:center">РќРµС‚ РІРёРґРµРѕ РёР»Рё РєСЂСѓР¶РѕС‡РєРѕРІ</div>`;
       return;
     }
     data.videos.forEach((v) => {
@@ -1160,12 +1166,12 @@ function renderSharedMediaCategory(cat) {
       const m = Math.floor(dur / 60);
       const s = String(dur % 60).padStart(2, "0");
       row.innerHTML = `
-        <span style="font-size:18px">📹</span>
+        <span style="font-size:18px">рџ“№</span>
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;color:#fff">Кружочек (${m}:${s})</div>
+          <div style="font-size:13px;font-weight:600;color:#fff">РљСЂСѓР¶РѕС‡РµРє (${m}:${s})</div>
           <div style="font-size:11px;color:var(--text-muted)">${escapeHtml(v.timestamp || "")}</div>
         </div>
-        <button type="button" class="shared-file-download-btn" onclick="openLightbox('${v.url}')">Смотреть</button>
+        <button type="button" class="shared-file-download-btn" onclick="openLightbox('${v.url}')">РЎРјРѕС‚СЂРµС‚СЊ</button>
       `;
       list.appendChild(row);
     });
@@ -1174,7 +1180,7 @@ function renderSharedMediaCategory(cat) {
     if (!list) return;
     list.innerHTML = "";
     if (data.files.length === 0) {
-      list.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px;text-align:center">Нет файлов</div>`;
+      list.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px;text-align:center">РќРµС‚ С„Р°Р№Р»РѕРІ</div>`;
       return;
     }
     data.files.forEach((f) => {
@@ -1182,13 +1188,13 @@ function renderSharedMediaCategory(cat) {
       row.className = "shared-file-row";
       row.innerHTML = `
         <div class="shared-file-info">
-          <span style="font-size:16px">📄</span>
+          <span style="font-size:16px">рџ“„</span>
           <div style="min-width:0;flex:1">
             <div class="shared-file-name">${escapeHtml(f.file_name)}</div>
             <div class="shared-file-size">${formatFileSize(f.file_size)}</div>
           </div>
         </div>
-        <a href="${f.url}" download="${escapeHtml(f.file_name)}" class="shared-file-download-btn">Скачать</a>
+        <a href="${f.url}" download="${escapeHtml(f.file_name)}" class="shared-file-download-btn">РЎРєР°С‡Р°С‚СЊ</a>
       `;
       list.appendChild(row);
     });
@@ -1197,7 +1203,7 @@ function renderSharedMediaCategory(cat) {
     if (!list) return;
     list.innerHTML = "";
     if (data.voices.length === 0) {
-      list.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px;text-align:center">Нет голосовых сообщений</div>`;
+      list.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px;text-align:center">РќРµС‚ РіРѕР»РѕСЃРѕРІС‹С… СЃРѕРѕР±С‰РµРЅРёР№</div>`;
       return;
     }
     data.voices.forEach((v, idx) => {
@@ -1208,7 +1214,7 @@ function renderSharedMediaCategory(cat) {
       const m = Math.floor(dur / 60);
       const s = String(dur % 60).padStart(2, "0");
       row.innerHTML = `
-        <span style="font-size:18px">🎙️</span>
+        <span style="font-size:18px">рџЋ™пёЏ</span>
         <div style="flex:1;min-width:0">
           <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">${escapeHtml(v.timestamp || "")}</div>
           <div class="message-voice-player" style="min-width:0;max-width:100%;padding:4px 0">
@@ -1230,7 +1236,7 @@ function renderSharedMediaCategory(cat) {
     if (!list) return;
     list.innerHTML = "";
     if (data.links.length === 0) {
-      list.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px;text-align:center">Нет ссылок</div>`;
+      list.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px;text-align:center">РќРµС‚ СЃСЃС‹Р»РѕРє</div>`;
       return;
     }
     data.links.forEach((l) => {
@@ -1239,7 +1245,7 @@ function renderSharedMediaCategory(cat) {
       a.href = l.url;
       a.target = "_blank";
       a.rel = "noopener noreferrer";
-      a.innerHTML = `<span>🔗</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${escapeHtml(l.url)}</span>`;
+      a.innerHTML = `<span>рџ”—</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${escapeHtml(l.url)}</span>`;
       list.appendChild(a);
     });
   }
@@ -1258,9 +1264,9 @@ function copyUserCode(el) {
   const text = el.textContent.trim();
   if (!text) return;
   navigator.clipboard.writeText(text).then(() => {
-    showToast("Код скопирован в буфер обмена!");
+    showToast("РљРѕРґ СЃРєРѕРїРёСЂРѕРІР°РЅ РІ Р±СѓС„РµСЂ РѕР±РјРµРЅР°!");
   }).catch(() => {
-    showToast("Код: " + text);
+    showToast("РљРѕРґ: " + text);
   });
 }
 
@@ -1304,7 +1310,7 @@ function openCreateGroupModal() {
   list.innerHTML = "";
 
   if (state.friends.length === 0) {
-    list.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px;">Сначала добавь кентов в друзья!</div>`;
+    list.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px;">РЎРЅР°С‡Р°Р»Р° РґРѕР±Р°РІСЊ РєРµРЅС‚РѕРІ РІ РґСЂСѓР·СЊСЏ!</div>`;
     return;
   }
 
@@ -1344,16 +1350,16 @@ async function handleCreateGroup(event) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      errEl.textContent = data.detail || "Ошибка при создании конфы";
+      errEl.textContent = data.detail || "РћС€РёР±РєР° РїСЂРё СЃРѕР·РґР°РЅРёРё РєРѕРЅС„С‹";
       errEl.classList.remove("hidden");
       return;
     }
     closeCreateGroupModal();
     await loadGroups();
     selectGroup(data);
-    showToast(`Конфа "${data.name}" создана!`);
+    showToast(`РљРѕРЅС„Р° "${data.name}" СЃРѕР·РґР°РЅР°!`);
   } catch (e) {
-    errEl.textContent = "Ошибка сети";
+    errEl.textContent = "РћС€РёР±РєР° СЃРµС‚Рё";
     errEl.classList.remove("hidden");
   }
 }
@@ -1372,7 +1378,7 @@ async function openGroupInfoModal() {
   });
 
   const list = document.getElementById("groupMembersList");
-  list.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px;">Загрузка участников...</div>`;
+  list.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px;">Р—Р°РіСЂСѓР·РєР° СѓС‡Р°СЃС‚РЅРёРєРѕРІ...</div>`;
 
   try {
     const res = await fetch(`/api/groups/${state.activeGroup.id}/members`, {
@@ -1381,18 +1387,18 @@ async function openGroupInfoModal() {
     if (res.ok) {
       const members = await res.json();
       state.activeGroupMembers = members;
-      document.getElementById("groupInfoCount").textContent = `${members.length} участников`;
+      document.getElementById("groupInfoCount").textContent = `${members.length} СѓС‡Р°СЃС‚РЅРёРєРѕРІ`;
       list.innerHTML = "";
       members.forEach((m) => {
         const row = document.createElement("div");
         row.className = "group-member-row";
         row.style.cursor = "pointer";
-        row.title = "Открыть профиль";
+        row.title = "РћС‚РєСЂС‹С‚СЊ РїСЂРѕС„РёР»СЊ";
         row.onclick = () => {
           closeGroupInfoModal();
           openTargetProfileModalById(m.id);
         };
-        const roleLabel = m.role === "owner" ? "Создатель" : "Участник";
+        const roleLabel = m.role === "owner" ? "РЎРѕР·РґР°С‚РµР»СЊ" : "РЈС‡Р°СЃС‚РЅРёРє";
         const nameColorStyle = m.profile_color ? `style="color:${escapeHtml(m.profile_color)};"` : "";
         const badgeHtml = m.custom_status ? ` <span class="user-status-badge">${escapeHtml(m.custom_status)}</span>` : "";
         row.innerHTML = `
@@ -1407,7 +1413,7 @@ async function openGroupInfoModal() {
       });
     }
   } catch (e) {
-    list.innerHTML = `<div style="color:#ef4444;font-size:12px;">Не удалось загрузить участников</div>`;
+    list.innerHTML = `<div style="color:#ef4444;font-size:12px;">РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ СѓС‡Р°СЃС‚РЅРёРєРѕРІ</div>`;
   }
 }
 
@@ -1439,7 +1445,7 @@ function renderAddGroupMembersChecklist() {
 
   const availableFriends = state.friends.filter(f => !currentMemberIds.has(Number(f.id)));
   if (availableFriends.length === 0) {
-    container.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px;">Все ваши друзья уже состоят в этой конфе</div>`;
+    container.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px;">Р’СЃРµ РІР°С€Рё РґСЂСѓР·СЊСЏ СѓР¶Рµ СЃРѕСЃС‚РѕСЏС‚ РІ СЌС‚РѕР№ РєРѕРЅС„Рµ</div>`;
     return;
   }
 
@@ -1460,7 +1466,7 @@ async function submitAddGroupMembers() {
   const checkboxes = document.querySelectorAll("#groupAddMembersChecklist input[type='checkbox']:checked");
   const memberIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
   if (memberIds.length === 0) {
-    showToast("Выберите хотя бы одного друга");
+    showToast("Р’С‹Р±РµСЂРёС‚Рµ С…РѕС‚СЏ Р±С‹ РѕРґРЅРѕРіРѕ РґСЂСѓРіР°");
     return;
   }
 
@@ -1474,16 +1480,16 @@ async function submitAddGroupMembers() {
       body: JSON.stringify({ member_ids: memberIds })
     });
     if (res.ok) {
-      showToast("Участники добавлены в конфу!");
+      showToast("РЈС‡Р°СЃС‚РЅРёРєРё РґРѕР±Р°РІР»РµРЅС‹ РІ РєРѕРЅС„Сѓ!");
       toggleAddMembersSection(false);
       await openGroupInfoModal();
       await loadGroups();
     } else {
       const err = await res.json().catch(() => ({}));
-      showToast(err.detail || "Не удалось добавить участников");
+      showToast(err.detail || "РќРµ СѓРґР°Р»РѕСЃСЊ РґРѕР±Р°РІРёС‚СЊ СѓС‡Р°СЃС‚РЅРёРєРѕРІ");
     }
   } catch (e) {
-    showToast("Ошибка сети");
+    showToast("РћС€РёР±РєР° СЃРµС‚Рё");
   }
 }
 
@@ -1576,20 +1582,20 @@ function reconcileTempMessage(tempId, realId) {
     const rxBox = tempWrap.querySelector(`[id^="reactions-"]`);
     if (rxBox) rxBox.id = `reactions-${realId}`;
 
-    const pinBtn = tempWrap.querySelector('button[title*="Закреп"]');
+    const pinBtn = tempWrap.querySelector('button[title*="Р—Р°РєСЂРµРї"]');
     if (pinBtn) pinBtn.onclick = (e) => { e.stopPropagation(); pinMessage(realId); };
 
-    const editBtn = tempWrap.querySelector('button[title*="Редакт"]');
+    const editBtn = tempWrap.querySelector('button[title*="Р РµРґР°РєС‚"]');
     if (editBtn) editBtn.onclick = (e) => { e.stopPropagation(); startEditMessage({ id: realId, content: tempWrap.querySelector(".message-text")?.textContent || "" }); };
 
-    const delBtn = tempWrap.querySelector('button[title*="Удалить"]');
+    const delBtn = tempWrap.querySelector('button[title*="РЈРґР°Р»РёС‚СЊ"]');
     if (delBtn) delBtn.onclick = (e) => { e.stopPropagation(); deleteMessage(realId); };
 
     const replyBtn = tempWrap.querySelector(".quick-reply-btn");
     if (replyBtn) {
       replyBtn.onclick = (e) => {
         e.stopPropagation();
-        startReply({ id: realId, sender_id: state.user.id, content: tempWrap.querySelector(".message-text")?.textContent || "Голосовое сообщение" });
+        startReply({ id: realId, sender_id: state.user.id, content: tempWrap.querySelector(".message-text")?.textContent || "Р“РѕР»РѕСЃРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ" });
       };
     }
 
@@ -1602,7 +1608,7 @@ function reconcileTempMessage(tempId, realId) {
     if (fwdBtn) {
       fwdBtn.onclick = (e) => {
         e.stopPropagation();
-        openForwardModal({ id: realId, sender_id: state.user.id, content: tempWrap.querySelector(".message-text")?.textContent || "Голосовое сообщение" });
+        openForwardModal({ id: realId, sender_id: state.user.id, content: tempWrap.querySelector(".message-text")?.textContent || "Р“РѕР»РѕСЃРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ" });
       };
     }
 
@@ -1709,7 +1715,7 @@ function handleWsMessage(data) {
       if (!editTag) {
         editTag = document.createElement("span");
         editTag.className = "message-edited-tag";
-        editTag.textContent = "(изм.)";
+        editTag.textContent = "(РёР·Рј.)";
         const meta = wrap.querySelector(".message-meta");
         if (meta) meta.appendChild(editTag);
       }
@@ -1728,7 +1734,7 @@ function handleWsMessage(data) {
     setPinnedMessage(data.pinned ? data.message : null);
   } else if (data.type === "group_created") {
     loadGroups();
-    showToast(`Вас добавили в конфу "${data.group.name}"!`);
+    showToast(`Р’Р°СЃ РґРѕР±Р°РІРёР»Рё РІ РєРѕРЅС„Сѓ "${data.group.name}"!`);
   } else if (data.type === "reaction_updated") {
     updateMessageReactions(data.message_id, data.reactions);
   } else if (data.type === "messages_read") {
@@ -1794,7 +1800,7 @@ function handleWsMessage(data) {
         const badgeEl = document.getElementById("targetProfileStatusBadge");
         if (badgeEl) badgeEl.textContent = data.custom_status || "";
         const bioEl = document.getElementById("targetProfileBio");
-        if (bioEl && data.bio !== undefined) bioEl.textContent = data.bio || "Пока ничего не написал(а)";
+        if (bioEl && data.bio !== undefined) bioEl.textContent = data.bio || "РџРѕРєР° РЅРёС‡РµРіРѕ РЅРµ РЅР°РїРёСЃР°Р»(Р°)";
         const bannerEl = document.getElementById("targetProfileBanner");
         if (bannerEl && data.custom_banner !== undefined) {
           const b = data.custom_banner || "linear-gradient(135deg, #1f1c2c, #928dab)";
@@ -1806,10 +1812,17 @@ function handleWsMessage(data) {
         }
       }
     }
+  } else if (data.type === "friend_request_received") {
+    loadFriendRequests();
+    showToast(`📩 Новая заявка в друзья от ${data.request.username}!`);
   } else if (data.type === "friend_added") {
-    state.friends.unshift(data.friend);
-    renderFriendsList();
-    showToast(`Вас добавил ${data.friend.username}!`);
+    const exists = state.friends.some(f => Number(f.id) === Number(data.friend.id));
+    if (!exists) {
+      state.friends.unshift(data.friend);
+      renderFriendsList();
+    }
+    loadFriendRequests();
+    showToast(`🎉 ${data.friend.username} теперь у тебя в друзьях!`);
   } else if (data.type === "typing") {
     if (state.activeFriend && Number(state.activeFriend.id) === Number(data.sender_id)) {
       showTypingIndicator();
@@ -1826,12 +1839,31 @@ function handleWsMessage(data) {
 }
 
 async function startVoiceCall() {
+  await initiateCall(false);
+}
+
+async function startVideoCall() {
+  await initiateCall(true);
+}
+
+function actionProfileVideoCall() {
+  closeTargetProfileModal();
+  if (state.targetProfileUser) {
+    const friend = state.friends.find(f => Number(f.id) === Number(state.targetProfileUser.id)) || state.targetProfileUser;
+    selectFriend(friend);
+    startVideoCall();
+  }
+}
+
+async function initiateCall(isVideo) {
   if (!state.activeFriend) return;
   state.call.isCaller = true;
+  state.call.isVideo = !!isVideo;
+  state.call.cameraOff = false;
   state.call.targetId = state.activeFriend.id;
   state.call.targetUser = state.activeFriend;
 
-  showCallModal(state.activeFriend, "Вызов кента...");
+  showCallModal(state.activeFriend, isVideo ? "Вызов (видео)..." : "Вызов кента...", isVideo);
   document.getElementById("callAcceptBtn").classList.add("hidden");
   document.getElementById("callMuteBtn").classList.remove("hidden");
   startRingtone(false);
@@ -1852,21 +1884,31 @@ async function startVoiceCall() {
     }
     audioEl.play().catch(() => {});
   }
+
   try {
-    state.call.localStream = await navigator.mediaDevices.getUserMedia({
+    const constraints = {
       audio: {
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true
       },
-      video: false
-    });
+      video: isVideo ? { facingMode: state.call.facingMode, width: { ideal: 1280 }, height: { ideal: 720 } } : false
+    };
+    state.call.localStream = await navigator.mediaDevices.getUserMedia(constraints);
     state.call.isMuted = false;
     state.call.localStream.getAudioTracks().forEach(t => { t.enabled = true; });
+
+    if (isVideo) {
+      const localVid = document.getElementById("callLocalVideo");
+      if (localVid) {
+        localVid.srcObject = state.call.localStream;
+        localVid.play().catch(() => {});
+      }
+    }
   } catch (err) {
     stopRingtone();
     hideCallModal();
-    showToast("Нет доступа к микрофону");
+    showToast(isVideo ? "Нет доступа к камере или микрофону" : "Нет доступа к микрофону");
     return;
   }
 
@@ -1876,12 +1918,13 @@ async function startVoiceCall() {
   try {
     const offer = await state.call.peer.createOffer({
       offerToReceiveAudio: true,
-      offerToReceiveVideo: false
+      offerToReceiveVideo: isVideo
     });
     await state.call.peer.setLocalDescription(offer);
     sendCallSignal({
       type: "call_offer",
       receiver_id: state.call.targetId,
+      is_video: isVideo,
       sdp: offer
     });
   } catch (err) {
@@ -1897,12 +1940,15 @@ async function handleIncomingCallOffer(data) {
     avatar_url: ""
   };
 
+  const isVideo = !!data.is_video || (data.sdp && data.sdp.sdp && data.sdp.sdp.includes("m=video"));
   state.call.isCaller = false;
+  state.call.isVideo = isVideo;
+  state.call.cameraOff = false;
   state.call.targetId = data.sender_id;
   state.call.targetUser = friend;
   state.call.pendingOffer = data.sdp;
 
-  showCallModal(friend, "Входящий вызов...");
+  showCallModal(friend, isVideo ? "Входящий видеозвонок..." : "Входящий вызов...", isVideo);
   document.getElementById("callAcceptBtn").classList.remove("hidden");
   document.getElementById("callMuteBtn").classList.add("hidden");
   startRingtone(true);
@@ -1915,6 +1961,8 @@ async function acceptIncomingCall() {
   document.getElementById("callAcceptBtn").classList.add("hidden");
   document.getElementById("callMuteBtn").classList.remove("hidden");
   document.getElementById("callStatusText").textContent = "Подключение...";
+
+  const isVideo = state.call.isVideo;
 
   const audioEl = document.getElementById("remoteAudio");
   if (audioEl) {
@@ -1932,20 +1980,30 @@ async function acceptIncomingCall() {
     }
     audioEl.play().catch(() => {});
   }
+
   try {
-    state.call.localStream = await navigator.mediaDevices.getUserMedia({
+    const constraints = {
       audio: {
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true
       },
-      video: false
-    });
+      video: isVideo ? { facingMode: state.call.facingMode, width: { ideal: 1280 }, height: { ideal: 720 } } : false
+    };
+    state.call.localStream = await navigator.mediaDevices.getUserMedia(constraints);
     state.call.isMuted = false;
     state.call.localStream.getAudioTracks().forEach(t => { t.enabled = true; });
+
+    if (isVideo) {
+      const localVid = document.getElementById("callLocalVideo");
+      if (localVid) {
+        localVid.srcObject = state.call.localStream;
+        localVid.play().catch(() => {});
+      }
+    }
   } catch (err) {
     endCall();
-    showToast("Нет доступа к микрофону");
+    showToast(isVideo ? "Нет доступа к камере или микрофону" : "Нет доступа к микрофону");
     return;
   }
 
@@ -1957,13 +2015,14 @@ async function acceptIncomingCall() {
     await flushQueuedIceCandidates();
     const answer = await state.call.peer.createAnswer({
       offerToReceiveAudio: true,
-      offerToReceiveVideo: false
+      offerToReceiveVideo: isVideo
     });
     await state.call.peer.setLocalDescription(answer);
 
     sendCallSignal({
       type: "call_answer",
       receiver_id: state.call.targetId,
+      is_video: isVideo,
       sdp: answer
     });
 
@@ -2036,21 +2095,32 @@ function createPeerConnection() {
     }
 
     const stream = (event.streams && event.streams[0]) ? event.streams[0] : new MediaStream([event.track]);
-    audioEl.srcObject = stream;
-    audioEl.muted = false;
-    audioEl.volume = 1.0;
+    state.call.remoteStream = stream;
 
-    const playPromise = audioEl.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(() => {
-        const unlock = () => {
-          audioEl.play().catch(() => {});
-          window.removeEventListener("click", unlock);
-          window.removeEventListener("touchstart", unlock);
-        };
-        window.addEventListener("click", unlock, { once: true });
-        window.addEventListener("touchstart", unlock, { once: true });
-      });
+    if (event.track.kind === "video") {
+      const remoteVid = document.getElementById("callRemoteVideo");
+      if (remoteVid) {
+        remoteVid.srcObject = stream;
+        remoteVid.play().catch(() => {});
+      }
+    }
+
+    if (event.track.kind === "audio" || !audioEl.srcObject) {
+      audioEl.srcObject = stream;
+      audioEl.muted = false;
+      audioEl.volume = 1.0;
+      const playPromise = audioEl.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          const unlock = () => {
+            audioEl.play().catch(() => {});
+            window.removeEventListener("click", unlock);
+            window.removeEventListener("touchstart", unlock);
+          };
+          window.addEventListener("click", unlock, { once: true });
+          window.addEventListener("touchstart", unlock, { once: true });
+        });
+      }
     }
   };
 
@@ -2063,11 +2133,63 @@ function createPeerConnection() {
       if (audioEl && audioEl.paused) {
         audioEl.play().catch(() => {});
       }
+      const remoteVid = document.getElementById("callRemoteVideo");
+      if (remoteVid && remoteVid.paused && remoteVid.srcObject) {
+        remoteVid.play().catch(() => {});
+      }
     } else if (state.call.peer.connectionState === "disconnected" || state.call.peer.connectionState === "failed") {
       if (avatar) avatar.classList.remove("avatar-call-pulse");
       endCall();
     }
   };
+}
+
+function toggleCallCamera() {
+  if (!state.call.localStream) return;
+  const vidTrack = state.call.localStream.getVideoTracks()[0];
+  if (!vidTrack) return;
+  state.call.cameraOff = !state.call.cameraOff;
+  vidTrack.enabled = !state.call.cameraOff;
+
+  const btn = document.getElementById("callVideoToggleBtn");
+  if (btn) {
+    btn.classList.toggle("camera-off", state.call.cameraOff);
+    btn.innerHTML = state.call.cameraOff
+      ? `<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M21 6.5l-4 4V7c0-.55-.45-1-1-1H9.82L21 17.18V6.5zM3.27 2L2 3.27l4.73 4.73H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.21 0 .39-.08.54-.18L19.73 23 21 21.73 3.27 2zM5 18V10.27L12.73 18H5z"/></svg>`
+      : `<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>`;
+  }
+}
+
+async function switchCallCamera() {
+  if (!state.call.localStream || !state.call.isVideo) return;
+  state.call.facingMode = state.call.facingMode === "user" ? "environment" : "user";
+  try {
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: state.call.facingMode, width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    const newVidTrack = newStream.getVideoTracks()[0];
+    const oldVidTrack = state.call.localStream.getVideoTracks()[0];
+    if (oldVidTrack) {
+      oldVidTrack.stop();
+      state.call.localStream.removeTrack(oldVidTrack);
+    }
+    state.call.localStream.addTrack(newVidTrack);
+
+    const localVid = document.getElementById("callLocalVideo");
+    if (localVid) {
+      localVid.srcObject = state.call.localStream;
+      localVid.style.transform = state.call.facingMode === "user" ? "scaleX(-1)" : "none";
+    }
+
+    if (state.call.peer) {
+      const sender = state.call.peer.getSenders().find(s => s.track && s.track.kind === "video");
+      if (sender) {
+        sender.replaceTrack(newVidTrack);
+      }
+    }
+  } catch (e) {
+    showToast("Не удалось переключить камеру");
+  }
 }
 
 function sendCallSignal(payload) {
@@ -2092,15 +2214,16 @@ function startCallTimer() {
 }
 
 function sendCallLogMessage(targetId, duration) {
+  const isVid = state.call.isVideo;
   const payload = {
     receiver_id: targetId,
     group_id: null,
-    content: "Звонок",
+    content: isVid ? "Видеозвонок" : "Звонок",
     timestamp: getClientTimeStr(),
     msg_type: "call_log",
     media_url: "",
     duration: duration,
-    file_name: "",
+    file_name: isVid ? "video" : "",
     file_size: 0,
     reply_to_id: null
   };
@@ -2152,6 +2275,8 @@ function endCall() {
   state.call.targetUser = null;
   state.call.pendingOffer = null;
   state.call.isMuted = false;
+  state.call.cameraOff = false;
+  state.call.isVideo = false;
   state.call.iceCandidatesQueue = [];
 
   hideCallModal();
@@ -2183,6 +2308,8 @@ function handleRemoteCallEnd() {
   state.call.targetUser = null;
   state.call.pendingOffer = null;
   state.call.isMuted = false;
+  state.call.cameraOff = false;
+  state.call.isVideo = false;
   state.call.iceCandidatesQueue = [];
 
   showToast("Звонок завершен");
@@ -2203,9 +2330,30 @@ function toggleMute() {
   }
 }
 
-function showCallModal(targetUser, status) {
+function showCallModal(targetUser, status, isVideo = false) {
   const modal = document.getElementById("callModal");
   modal.classList.remove("hidden");
+  
+  const box = document.getElementById("callModalBox");
+  const videoContainer = document.getElementById("callVideoContainer");
+  const avatarArea = document.getElementById("callAvatarArea");
+  const videoToggleBtn = document.getElementById("callVideoToggleBtn");
+  const switchCamBtn = document.getElementById("callSwitchCamBtn");
+
+  if (isVideo) {
+    if (box) box.classList.add("video-mode");
+    if (videoContainer) videoContainer.classList.remove("hidden");
+    if (avatarArea) avatarArea.classList.add("hidden");
+    if (videoToggleBtn) videoToggleBtn.classList.remove("hidden");
+    if (switchCamBtn) switchCamBtn.classList.remove("hidden");
+  } else {
+    if (box) box.classList.remove("video-mode");
+    if (videoContainer) videoContainer.classList.add("hidden");
+    if (avatarArea) avatarArea.classList.remove("hidden");
+    if (videoToggleBtn) videoToggleBtn.classList.add("hidden");
+    if (switchCamBtn) switchCamBtn.classList.add("hidden");
+  }
+
   document.getElementById("callTargetName").textContent = targetUser.username || targetUser.name;
   document.getElementById("callStatusText").textContent = status;
   document.getElementById("callTimer").classList.add("hidden");
@@ -2215,10 +2363,26 @@ function showCallModal(targetUser, status) {
 function hideCallModal() {
   const modal = document.getElementById("callModal");
   modal.classList.add("hidden");
+  const box = document.getElementById("callModalBox");
+  if (box) box.classList.remove("video-mode");
+  const videoContainer = document.getElementById("callVideoContainer");
+  if (videoContainer) videoContainer.classList.add("hidden");
   const avatar = document.getElementById("callAvatar");
   if (avatar) avatar.classList.remove("avatar-call-pulse");
   const muteBtn = document.getElementById("callMuteBtn");
   if (muteBtn) muteBtn.classList.remove("muted");
+  const videoToggleBtn = document.getElementById("callVideoToggleBtn");
+  if (videoToggleBtn) {
+    videoToggleBtn.classList.remove("camera-off");
+    videoToggleBtn.classList.add("hidden");
+  }
+  const switchCamBtn = document.getElementById("callSwitchCamBtn");
+  if (switchCamBtn) switchCamBtn.classList.add("hidden");
+
+  const remoteVid = document.getElementById("callRemoteVideo");
+  if (remoteVid) remoteVid.srcObject = null;
+  const localVid = document.getElementById("callLocalVideo");
+  if (localVid) localVid.srcObject = null;
 }
 
 async function markAsRead(friendId) {
@@ -2247,6 +2411,47 @@ async function loadFriends() {
       renderFriendsList();
     }
   } catch (e) {}
+  await loadFriendRequests();
+}
+
+async function loadFriendRequests() {
+  if (!state.token) return;
+  try {
+    const res = await fetch("/api/friends/requests", {
+      headers: { "Authorization": `Bearer ${state.token}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      state.friendRequests = data || { incoming: [], outgoing: [] };
+      updateRequestsBadges();
+      renderFriendRequests();
+    }
+  } catch (e) {}
+}
+
+function updateRequestsBadges() {
+  const incCount = (state.friendRequests && state.friendRequests.incoming) ? state.friendRequests.incoming.length : 0;
+  const badgeModal = document.getElementById("incomingRequestsBadge");
+  const alertBar = document.getElementById("incomingRequestsAlertBar");
+  const sidebarBadge = document.getElementById("sidebarRequestsBadge");
+
+  if (badgeModal) {
+    if (incCount > 0) {
+      badgeModal.textContent = String(incCount);
+      badgeModal.classList.remove("hidden");
+    } else {
+      badgeModal.classList.add("hidden");
+    }
+  }
+
+  if (alertBar && sidebarBadge) {
+    if (incCount > 0) {
+      sidebarBadge.textContent = String(incCount);
+      alertBar.classList.remove("hidden");
+    } else {
+      alertBar.classList.add("hidden");
+    }
+  }
 }
 
 async function loadGroups() {
@@ -2271,8 +2476,8 @@ function renderFriendsList() {
     if (state.groups.length === 0) {
       container.innerHTML = `
         <div class="empty-friends">
-          У тебя пока нет конф.<br>
-          Нажми на иконку группы вверху, чтобы создать конфу!
+          РЈ С‚РµР±СЏ РїРѕРєР° РЅРµС‚ РєРѕРЅС„.<br>
+          РќР°Р¶РјРё РЅР° РёРєРѕРЅРєСѓ РіСЂСѓРїРїС‹ РІРІРµСЂС…Сѓ, С‡С‚РѕР±С‹ СЃРѕР·РґР°С‚СЊ РєРѕРЅС„Сѓ!
         </div>
       `;
       return;
@@ -2291,10 +2496,10 @@ function renderFriendsList() {
         </div>
         <div class="friend-info">
           <div class="friend-header-row">
-            <div class="friend-name">${escapeHtml(group.name)} <span class="badge-group">Конфа</span></div>
+            <div class="friend-name">${escapeHtml(group.name)} <span class="badge-group">РљРѕРЅС„Р°</span></div>
           </div>
           <div class="friend-sub-row">
-            <div class="friend-last-msg">${group.member_count || 1} участников</div>
+            <div class="friend-last-msg">${group.member_count || 1} СѓС‡Р°СЃС‚РЅРёРєРѕРІ</div>
           </div>
         </div>
       `;
@@ -2310,15 +2515,7 @@ function renderFriendsList() {
     return;
   }
 
-  if (state.friends.length === 0 && state.groups.length === 0) {
-    container.innerHTML = `
-      <div class="empty-friends">
-        У тебя пока нет диалогов.<br>
-        Нажми <b>+</b> сверху или поделись своим кодом <b>${state.user.user_code}</b>
-      </div>
-    `;
-    return;
-  }
+  
 
   if (!query) {
     const isSavedActive = state.activeFriend && Number(state.activeFriend.id) === Number(state.user.id);
@@ -2333,18 +2530,18 @@ function renderFriendsList() {
       </div>
       <div class="friend-info">
         <div class="friend-header-row">
-          <div class="friend-name">Избранное</div>
+          <div class="friend-name">РР·Р±СЂР°РЅРЅРѕРµ</div>
           <div class="friend-time" id="saved-last-time"></div>
         </div>
         <div class="friend-sub-row">
-          <div class="friend-last-msg" id="saved-last-msg">Сохранённые сообщения</div>
+          <div class="friend-last-msg" id="saved-last-msg">РЎРѕС…СЂР°РЅС‘РЅРЅС‹Рµ СЃРѕРѕР±С‰РµРЅРёСЏ</div>
         </div>
       </div>
     `;
     container.appendChild(savedItem);
   }
 
-  if (!query || "ai chat luna gpt ии нейросеть".includes(query)) {
+  if (!query || "ai chat luna gpt РёРё РЅРµР№СЂРѕСЃРµС‚СЊ".includes(query)) {
     const isAiActive = state.activeFriend && state.aiBot && Number(state.activeFriend.id) === Number(state.aiBot.id);
     const aiItem = document.createElement("div");
     aiItem.className = `friend-item ai-chat-item ${isAiActive ? "active" : ""}`;
@@ -2367,11 +2564,19 @@ function renderFriendsList() {
           <div class="friend-time" id="ai-last-time"></div>
         </div>
         <div class="friend-sub-row">
-          <div class="friend-last-msg" id="ai-last-msg">Нейросеть Luna онлайн</div>
+          <div class="friend-last-msg" id="ai-last-msg">РќРµР№СЂРѕСЃРµС‚СЊ Luna РѕРЅР»Р°Р№РЅ</div>
         </div>
       </div>
     `;
     container.appendChild(aiItem);
+  }
+
+  if (state.friends.length === 0 && !query) {
+    const emptyHint = document.createElement("div");
+    emptyHint.className = "empty-friends";
+    emptyHint.style.marginTop = "20px";
+    emptyHint.innerHTML = "У тебя пока нет друзей.<br>Нажми <b>+</b> сверху и отправь другу код <b>" + state.user.user_code + "</b>";
+    container.appendChild(emptyHint);
   }
 
   state.groups.forEach((group) => {
@@ -2387,10 +2592,10 @@ function renderFriendsList() {
       </div>
       <div class="friend-info">
         <div class="friend-header-row">
-          <div class="friend-name">${escapeHtml(group.name)} <span class="badge-group">Конфа</span></div>
+          <div class="friend-name">${escapeHtml(group.name)} <span class="badge-group">РљРѕРЅС„Р°</span></div>
         </div>
         <div class="friend-sub-row">
-          <div class="friend-last-msg">${group.member_count || 1} участников</div>
+          <div class="friend-last-msg">${group.member_count || 1} СѓС‡Р°СЃС‚РЅРёРєРѕРІ</div>
         </div>
       </div>
     `;
@@ -2425,7 +2630,7 @@ function renderFriendsList() {
     const badgeHtml = friend.custom_status ? ` <span class="user-status-badge">${escapeHtml(friend.custom_status)}</span>` : "";
 
     item.innerHTML = `
-      <div class="avatar-wrapper" title="Открыть профиль">
+      <div class="avatar-wrapper" title="РћС‚РєСЂС‹С‚СЊ РїСЂРѕС„РёР»СЊ">
         <div class="avatar-circle friend-av-${friend.id}" style="cursor:pointer"></div>
         <div class="status-indicator ${isOnline ? "online" : "offline"}"></div>
       </div>
@@ -2486,7 +2691,7 @@ async function selectFriend(friend) {
   }
   
   const statusEl = document.getElementById("targetStatus");
-  statusEl.textContent = friend.status_text || (friend.is_online ? "в сети" : "был(а) недавно");
+  statusEl.textContent = friend.status_text || (friend.is_online ? "РІ СЃРµС‚Рё" : "Р±С‹Р»(Р°) РЅРµРґР°РІРЅРѕ");
   statusEl.className = `target-status ${friend.is_online ? "online" : ""}`;
 
   const ind = document.getElementById("targetStatusIndicator");
@@ -2515,7 +2720,7 @@ async function openSavedMessages() {
   if (!state.user) return;
   const savedFriend = {
     id: state.user.id,
-    username: "Избранное",
+    username: "РР·Р±СЂР°РЅРЅРѕРµ",
     user_code: state.user.user_code,
     avatar_color: "#5865F2",
     avatar_url: "",
@@ -2545,14 +2750,14 @@ async function openSavedMessages() {
   document.getElementById("chatArea").classList.add("mobile-open");
 
   const targetUserEl = document.getElementById("targetUsername");
-  targetUserEl.textContent = "Избранное";
+  targetUserEl.textContent = "РР·Р±СЂР°РЅРЅРѕРµ";
   targetUserEl.style.color = "#5865F2";
 
   const targetBadgeEl = document.getElementById("targetStatusBadge");
   if (targetBadgeEl) targetBadgeEl.textContent = "";
 
   const statusEl = document.getElementById("targetStatus");
-  statusEl.textContent = "Сохранённые сообщения";
+  statusEl.textContent = "РЎРѕС…СЂР°РЅС‘РЅРЅС‹Рµ СЃРѕРѕР±С‰РµРЅРёСЏ";
   statusEl.className = "target-status";
 
   const ind = document.getElementById("targetStatusIndicator");
@@ -2608,9 +2813,9 @@ async function saveMessageToFavorites(msgId) {
         body: JSON.stringify(payload)
       });
     }
-    showToast("✅ Сохранено в Избранное");
+    showToast("вњ… РЎРѕС…СЂР°РЅРµРЅРѕ РІ РР·Р±СЂР°РЅРЅРѕРµ");
   } catch (e) {
-    showToast("Ошибка при сохранении");
+    showToast("РћС€РёР±РєР° РїСЂРё СЃРѕС…СЂР°РЅРµРЅРёРё");
   }
 }
 
@@ -2723,7 +2928,7 @@ async function transcribeVoice(msgId, btn) {
         btn.classList.remove("loading");
         btn.disabled = false;
       }
-      showToast("Подождите отправки аудио");
+      showToast("РџРѕРґРѕР¶РґРёС‚Рµ РѕС‚РїСЂР°РІРєРё Р°СѓРґРёРѕ");
       return;
     }
   }
@@ -2784,14 +2989,14 @@ async function transcribeVoice(msgId, btn) {
         box.classList.remove("hidden");
         if (btn) btn.classList.add("active");
       } else {
-        showToast("Не удалось распознать речь");
+        showToast("РќРµ СѓРґР°Р»РѕСЃСЊ СЂР°СЃРїРѕР·РЅР°С‚СЊ СЂРµС‡СЊ");
       }
     } else {
       const errData = await res.json().catch(() => ({}));
-      showToast(errData.detail || "Ошибка при расшифровке");
+      showToast(errData.detail || "РћС€РёР±РєР° РїСЂРё СЂР°СЃС€РёС„СЂРѕРІРєРµ");
     }
   } catch (e) {
-    showToast("Сетевая ошибка");
+    showToast("РЎРµС‚РµРІР°СЏ РѕС€РёР±РєР°");
   } finally {
     if (btn) {
       btn.innerHTML = VOICE_TRANSCRIBE_ICON;
@@ -2826,18 +3031,18 @@ function renderForwardTargets(filter) {
   list.innerHTML = "";
 
   const targets = [];
-  targets.push({ type: "saved", id: state.user.id, name: "Избранное", icon: "🔖", color: "#5865F2" });
+  targets.push({ type: "saved", id: state.user.id, name: "РР·Р±СЂР°РЅРЅРѕРµ", icon: "рџ”–", color: "#5865F2" });
   if (state.aiBot) {
-    targets.push({ type: "ai", id: state.aiBot.id, name: "AI CHAT", icon: "🤖", color: "#10a37f" });
+    targets.push({ type: "ai", id: state.aiBot.id, name: "AI CHAT", icon: "рџ¤–", color: "#10a37f" });
   }
 
   state.friends.forEach(f => {
     if (state.aiBot && Number(f.id) === Number(state.aiBot.id)) return;
-    targets.push({ type: "friend", id: f.id, name: f.username, icon: "👤", color: f.avatar_color || "#5865F2" });
+    targets.push({ type: "friend", id: f.id, name: f.username, icon: "рџ‘¤", color: f.avatar_color || "#5865F2" });
   });
 
   state.groups.forEach(g => {
-    targets.push({ type: "group", id: g.id, name: g.name, icon: "👥", color: g.avatar_color || "#FEE75C" });
+    targets.push({ type: "group", id: g.id, name: g.name, icon: "рџ‘Ґ", color: g.avatar_color || "#FEE75C" });
   });
 
   targets.forEach(t => {
@@ -2859,7 +3064,7 @@ async function executeForwardMessage(target) {
   closeForwardModal();
 
   const timeStr = getClientTimeStr();
-  const forwardHeader = `Переслано от ${msg.sender_username || "пользователя"}`;
+  const forwardHeader = `РџРµСЂРµСЃР»Р°РЅРѕ РѕС‚ ${msg.sender_username || "РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"}`;
   const payload = {
     receiver_id: target.type === "group" ? null : target.id,
     group_id: target.type === "group" ? target.id : null,
@@ -2881,7 +3086,7 @@ async function executeForwardMessage(target) {
         ...payload,
         reply_to: {
           username: forwardHeader,
-          content: msg.content || (msg.msg_type === "image" ? "📷 Фото" : "Медиафайл")
+          content: msg.content || (msg.msg_type === "image" ? "рџ“· Р¤РѕС‚Рѕ" : "РњРµРґРёР°С„Р°Р№Р»")
         }
       }));
     } else {
@@ -2891,9 +3096,9 @@ async function executeForwardMessage(target) {
         body: JSON.stringify(payload)
       });
     }
-    showToast(`Переслано в ${target.name}`);
+    showToast(`РџРµСЂРµСЃР»Р°РЅРѕ РІ ${target.name}`);
   } catch (e) {
-    showToast("Ошибка при пересылке");
+    showToast("РћС€РёР±РєР° РїСЂРё РїРµСЂРµСЃС‹Р»РєРµ");
   }
 }
 
@@ -2913,9 +3118,9 @@ async function openAiChat() {
     avatar_color: "#10a37f",
     avatar_url: "",
     is_online: true,
-    custom_status: "🤖",
+    custom_status: "рџ¤–",
     profile_color: "#10a37f",
-    bio: "Искусственный интеллект ChickenMax (модель: gpt-6-luna)",
+    bio: "РСЃРєСѓСЃСЃС‚РІРµРЅРЅС‹Р№ РёРЅС‚РµР»Р»РµРєС‚ ChickenMax (РјРѕРґРµР»СЊ: gpt-6-luna)",
     last_message: "",
     last_time: "",
     unread_count: 0,
@@ -2942,10 +3147,10 @@ async function openAiChat() {
   targetUserEl.style.color = "#10a37f";
 
   const targetBadgeEl = document.getElementById("targetStatusBadge");
-  if (targetBadgeEl) targetBadgeEl.textContent = "🤖";
+  if (targetBadgeEl) targetBadgeEl.textContent = "рџ¤–";
 
   const statusEl = document.getElementById("targetStatus");
-  statusEl.textContent = "модель: gpt-6-luna";
+  statusEl.textContent = "РјРѕРґРµР»СЊ: gpt-6-luna";
   statusEl.className = "target-status online";
 
   const ind = document.getElementById("targetStatusIndicator");
@@ -2997,7 +3202,7 @@ async function selectGroup(group) {
   }
   
   const statusEl = document.getElementById("targetStatus");
-  statusEl.textContent = `${group.member_count || "конфа"} участников`;
+  statusEl.textContent = `${group.member_count || "РєРѕРЅС„Р°"} СѓС‡Р°СЃС‚РЅРёРєРѕРІ`;
   statusEl.className = "target-status";
 
   const ind = document.getElementById("targetStatusIndicator");
@@ -3193,7 +3398,7 @@ function initSwipeToReply(wrapper, msg) {
 
   const hint = document.createElement("div");
   hint.className = "swipe-reply-hint";
-  hint.textContent = "↩";
+  hint.textContent = "в†©";
   wrapper.appendChild(hint);
 
   wrapper.addEventListener("touchstart", (e) => {
@@ -3273,7 +3478,7 @@ function toggleSecretMode() {
   if (btn) btn.classList.toggle("active", state.isSecretMode);
   const banner = document.getElementById("secretChatBanner");
   if (banner) banner.classList.toggle("hidden", !state.isSecretMode);
-  showToast(state.isSecretMode ? "Секретный E2EE режим включен" : "Секретный режим выключен");
+  showToast(state.isSecretMode ? "РЎРµРєСЂРµС‚РЅС‹Р№ E2EE СЂРµР¶РёРј РІРєР»СЋС‡РµРЅ" : "РЎРµРєСЂРµС‚РЅС‹Р№ СЂРµР¶РёРј РІС‹РєР»СЋС‡РµРЅ");
 }
 
 function changeSecretTimer(val) {
@@ -3339,7 +3544,7 @@ async function decryptMessageText(cipherText, peerId) {
     const dec = new TextDecoder();
     return dec.decode(decryptedBuf);
   } catch (e) {
-    return "[Зашифрованное сообщение]";
+    return "[Р—Р°С€РёС„СЂРѕРІР°РЅРЅРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ]";
   }
 }
 
@@ -3349,13 +3554,13 @@ function initBurnTimer(wrapper, msgId, seconds) {
   const burnBadge = document.createElement("span");
   burnBadge.className = "burn-timer-badge";
   const flameSvg = `<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" style="vertical-align:-1px;margin-right:2px"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/></svg>`;
-  burnBadge.innerHTML = `${flameSvg}${remaining}с`;
+  burnBadge.innerHTML = `${flameSvg}${remaining}СЃ`;
   if (meta) meta.prepend(burnBadge);
 
   const timer = setInterval(() => {
     remaining--;
     if (remaining > 0) {
-      burnBadge.innerHTML = `${flameSvg}${remaining}с`;
+      burnBadge.innerHTML = `${flameSvg}${remaining}СЃ`;
     } else {
       clearInterval(timer);
       wrapper.classList.add("burning");
@@ -3418,9 +3623,9 @@ function appendMessage(msg) {
   let checkHtml = "";
   if (isSelf) {
     if (msg.is_read) {
-      checkHtml = `<span class="check-icon read" title="Прочитано"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm2.5 0a.5.5 0 0 0-.708-.708L7.5 10.293 6.646 9.439a.5.5 0 0 0-.708.708l1.208 1.207a.5.5 0 0 0 .708 0l7-7z"/></svg></span>`;
+      checkHtml = `<span class="check-icon read" title="РџСЂРѕС‡РёС‚Р°РЅРѕ"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm2.5 0a.5.5 0 0 0-.708-.708L7.5 10.293 6.646 9.439a.5.5 0 0 0-.708.708l1.208 1.207a.5.5 0 0 0 .708 0l7-7z"/></svg></span>`;
     } else {
-      checkHtml = `<span class="check-icon sent" title="Доставлено"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg></span>`;
+      checkHtml = `<span class="check-icon sent" title="Р”РѕСЃС‚Р°РІР»РµРЅРѕ"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg></span>`;
     }
   }
 
@@ -3439,15 +3644,15 @@ function appendMessage(msg) {
     const sName = escapeHtml(msg.sender_username || msg.sender_name);
     const sColor = msg.sender_profile_color ? `color:${escapeHtml(msg.sender_profile_color)};` : "color:var(--accent-primary);";
     const sBadge = msg.sender_custom_status ? ` <span class="user-status-badge">${escapeHtml(msg.sender_custom_status)}</span>` : "";
-    senderNameHtml = `<div class="message-sender-name" style="${sColor}cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;margin-bottom:2px;" onclick="openTargetProfileModalById(${msg.sender_id})" title="Открыть профиль">${sName}${sBadge}</div>`;
+    senderNameHtml = `<div class="message-sender-name" style="${sColor}cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;margin-bottom:2px;" onclick="openTargetProfileModalById(${msg.sender_id})" title="РћС‚РєСЂС‹С‚СЊ РїСЂРѕС„РёР»СЊ">${sName}${sBadge}</div>`;
   }
 
   let bodyHtml = "";
   if (msg.msg_type === "image") {
     const rawContent = (msg.content || "").trim();
     const isAutoName = !rawContent ||
-      rawContent === "Фотография" ||
-      rawContent === "GIF анимация" ||
+      rawContent === "Р¤РѕС‚РѕРіСЂР°С„РёСЏ" ||
+      rawContent === "GIF Р°РЅРёРјР°С†РёСЏ" ||
       /\.(jpe?g|png|webp|gif|bmp|svg)$/i.test(rawContent) ||
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(rawContent);
 
@@ -3458,7 +3663,7 @@ function appendMessage(msg) {
 
     bodyHtml = `
       <div class="message-image-wrap" onclick="openLightbox('${msg.media_url}')">
-        <img src="${msg.media_url}" loading="lazy" alt="Фото">
+        <img src="${msg.media_url}" loading="lazy" alt="Р¤РѕС‚Рѕ">
       </div>
       ${hasCaption ? `<div class="message-text" style="margin-top:6px;">${escapeHtml(rawContent)}</div>` : ""}
     `;
@@ -3466,7 +3671,7 @@ function appendMessage(msg) {
     const dur = msg.duration || 0;
     const m = Math.floor(dur / 60);
     const s = String(dur % 60).padStart(2, "0");
-    const hasTranscript = msg.content && !msg.content.startsWith("Голосовое");
+    const hasTranscript = msg.content && !msg.content.startsWith("Р“РѕР»РѕСЃРѕРІРѕРµ");
     bodyHtml = `
       <div class="message-voice-player">
         <button type="button" id="voice-play-${msg.id}" class="voice-play-btn" data-audio-url="${msg.media_url}" data-duration="${dur}" onclick="togglePlayVoice('${msg.id}', this)">${VOICE_PLAY_ICON}</button>
@@ -3478,7 +3683,7 @@ function appendMessage(msg) {
             <span id="voice-time-${msg.id}">${m}:${s}</span>
             <div class="voice-actions-group">
               <span id="voice-speed-${msg.id}" class="voice-speed-badge" onclick="changeVoiceSpeed('${msg.id}')">1x</span>
-              <button type="button" class="voice-transcribe-btn ${hasTranscript ? 'active' : ''}" onclick="transcribeVoice('${msg.id}', this)" title="Расшифровать в текст">${VOICE_TRANSCRIBE_ICON}</button>
+              <button type="button" class="voice-transcribe-btn ${hasTranscript ? 'active' : ''}" onclick="transcribeVoice('${msg.id}', this)" title="Р Р°СЃС€РёС„СЂРѕРІР°С‚СЊ РІ С‚РµРєСЃС‚">${VOICE_TRANSCRIBE_ICON}</button>
             </div>
           </div>
         </div>
@@ -3494,7 +3699,7 @@ function appendMessage(msg) {
     bodyHtml = `
       <div class="video-note-bubble" onclick="toggleVideoNotePlay(this)">
         <video src="${msg.media_url}" playsinline loop preload="metadata"></video>
-        <div class="video-note-play-icon">▶</div>
+        <div class="video-note-play-icon">в–¶</div>
         <div class="video-note-duration">${m}:${s}</div>
       </div>
     `;
@@ -3511,7 +3716,7 @@ function appendMessage(msg) {
             <span class="file-card-ext">${ext.toUpperCase() || "FILE"}</span>
           </div>
         </div>
-        <a href="${msg.media_url}" download="${escapeHtml(msg.file_name || 'file')}" class="file-download-btn" title="Скачать файл" target="_blank" onclick="event.stopPropagation()">
+        <a href="${msg.media_url}" download="${escapeHtml(msg.file_name || 'file')}" class="file-download-btn" title="РЎРєР°С‡Р°С‚СЊ С„Р°Р№Р»" target="_blank" onclick="event.stopPropagation()">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
         </a>
       </div>
@@ -3525,16 +3730,19 @@ function appendMessage(msg) {
     `;
   } else if (msg.msg_type === "call_log") {
     const dur = msg.duration || 0;
+    const isVideoMsg = msg.file_name === "video" || (msg.content && msg.content.toLowerCase().includes("видео"));
     let title = "";
     let color = "";
     let arrowHtml = "";
+    const callLabel = isVideoMsg ? "Видеозвонок" : "Звонок";
+
     if (dur === 0) {
       if (isSelf) {
-        title = "Отменённый звонок";
+        title = isVideoMsg ? "Отменённый видеозвонок" : "Отменённый звонок";
         color = "var(--text-secondary)";
         arrowHtml = `<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" style="vertical-align:-1px;"><path d="M9 5v2h6.59L4 18.59 5.41 20 17 8.41V15h2V5z"/></svg>`;
       } else {
-        title = "Пропущенный звонок";
+        title = isVideoMsg ? "Пропущенный видеозвонок" : "Пропущенный звонок";
         color = "#ff4d4f";
         arrowHtml = `<svg viewBox="0 0 24 24" width="12" height="12" fill="#ff4d4f" style="vertical-align:-1px;"><path d="M20 5.41L18.59 4 7 15.59V9H5v10h10v-2H8.41z"/></svg>`;
       }
@@ -3542,15 +3750,20 @@ function appendMessage(msg) {
       const m = Math.floor(dur / 60);
       const s = String(dur % 60).padStart(2, "0");
       if (isSelf) {
-        title = `Исходящий звонок (${m}:${s})`;
+        title = isVideoMsg ? `Исходящий видеозвонок (${m}:${s})` : `Исходящий звонок (${m}:${s})`;
         color = "var(--text-primary)";
         arrowHtml = `<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" style="vertical-align:-1px;"><path d="M9 5v2h6.59L4 18.59 5.41 20 17 8.41V15h2V5z"/></svg>`;
       } else {
-        title = `Входящий звонок (${m}:${s})`;
+        title = isVideoMsg ? `Входящий видеозвонок (${m}:${s})` : `Входящий звонок (${m}:${s})`;
         color = "var(--text-primary)";
         arrowHtml = `<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" style="vertical-align:-1px;"><path d="M20 5.41L18.59 4 7 15.59V9H5v10h10v-2H8.41z"/></svg>`;
       }
     }
+
+    const iconSvg = isVideoMsg
+      ? `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>`
+      : `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>`;
+
     bodyHtml = `
       <div class="message-call-log" style="display:flex;align-items:center;gap:12px;padding:2px 0 6px;">
         <div class="call-log-info" style="flex:1;">
@@ -3558,11 +3771,11 @@ function appendMessage(msg) {
             ${title}
           </div>
           <div class="call-log-subtitle" style="font-size:13px;color:var(--text-secondary);">
-            ${arrowHtml} Звонок
+            ${arrowHtml} ${callLabel}
           </div>
         </div>
         <div class="call-log-icon" style="background:var(--accent-primary);opacity:0.9;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:#fff;">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+          ${iconSvg}
         </div>
       </div>
     `;
@@ -3570,8 +3783,8 @@ function appendMessage(msg) {
     bodyHtml = `<div class="message-text">${formatMessageText(msg.content)}</div>`;
   }
 
-  const editedHtml = msg.is_edited ? `<span class="message-edited-tag">(изм.)</span>` : "";
-  const pinnedHtml = msg.is_pinned ? `<span class="message-pinned-tag" title="Закреплено"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M16 9V4l1 0c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1l1 0v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg></span>` : "";
+  const editedHtml = msg.is_edited ? `<span class="message-edited-tag">(РёР·Рј.)</span>` : "";
+  const pinnedHtml = msg.is_pinned ? `<span class="message-pinned-tag" title="Р—Р°РєСЂРµРїР»РµРЅРѕ"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M16 9V4l1 0c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1l1 0v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg></span>` : "";
 
   bubble.innerHTML = `
     ${senderNameHtml}
@@ -3591,7 +3804,7 @@ function appendMessage(msg) {
   const replyBtn = document.createElement("button");
   replyBtn.type = "button";
   replyBtn.className = "quick-react-btn quick-reply-btn";
-  replyBtn.title = "Ответить";
+  replyBtn.title = "РћС‚РІРµС‚РёС‚СЊ";
   replyBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg>`;
   replyBtn.onclick = (e) => {
     e.stopPropagation();
@@ -3602,7 +3815,7 @@ function appendMessage(msg) {
   const pinBtn = document.createElement("button");
   pinBtn.type = "button";
   pinBtn.className = "quick-react-btn quick-action-icon-btn quick-pin-btn";
-  pinBtn.title = msg.is_pinned ? "Открепить" : "Закрепить";
+  pinBtn.title = msg.is_pinned ? "РћС‚РєСЂРµРїРёС‚СЊ" : "Р—Р°РєСЂРµРїРёС‚СЊ";
   pinBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16 9V4l1 0c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1l1 0v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg>`;
   pinBtn.onclick = (e) => {
     e.stopPropagation();
@@ -3614,7 +3827,7 @@ function appendMessage(msg) {
     const editBtn = document.createElement("button");
     editBtn.type = "button";
     editBtn.className = "quick-react-btn quick-action-icon-btn quick-edit-btn";
-    editBtn.title = "Редактировать";
+    editBtn.title = "Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ";
     editBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`;
     editBtn.onclick = (e) => {
       e.stopPropagation();
@@ -3626,7 +3839,7 @@ function appendMessage(msg) {
   const delBtn = document.createElement("button");
   delBtn.type = "button";
   delBtn.className = "quick-react-btn quick-action-icon-btn quick-del-btn";
-  delBtn.title = isSelf ? "Удалить для всех" : "Удалить у себя";
+  delBtn.title = isSelf ? "РЈРґР°Р»РёС‚СЊ РґР»СЏ РІСЃРµС…" : "РЈРґР°Р»РёС‚СЊ Сѓ СЃРµР±СЏ";
   delBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
   delBtn.onclick = (e) => {
     e.stopPropagation();
@@ -3639,7 +3852,7 @@ function appendMessage(msg) {
     const saveBtn = document.createElement("button");
     saveBtn.type = "button";
     saveBtn.className = "quick-react-btn quick-action-icon-btn quick-save-btn";
-    saveBtn.title = "Сохранить в Избранное";
+    saveBtn.title = "РЎРѕС…СЂР°РЅРёС‚СЊ РІ РР·Р±СЂР°РЅРЅРѕРµ";
     saveBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>`;
     saveBtn.onclick = (e) => {
       e.stopPropagation();
@@ -3651,7 +3864,7 @@ function appendMessage(msg) {
   const forwardBtn = document.createElement("button");
   forwardBtn.type = "button";
   forwardBtn.className = "quick-react-btn quick-action-icon-btn quick-forward-btn";
-  forwardBtn.title = "Переслать";
+  forwardBtn.title = "РџРµСЂРµСЃР»Р°С‚СЊ";
   forwardBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z"/></svg>`;
   forwardBtn.onclick = (e) => {
     e.stopPropagation();
@@ -3700,7 +3913,7 @@ function appendMessage(msg) {
 }
 
 function startReply(msg) {
-  const authorName = msg.sender_id === state.user.id ? "Себе" : (msg.sender_username || msg.sender_name || (state.activeFriend ? state.activeFriend.username : "Собеседнику"));
+  const authorName = msg.sender_id === state.user.id ? "РЎРµР±Рµ" : (msg.sender_username || msg.sender_name || (state.activeFriend ? state.activeFriend.username : "РЎРѕР±РµСЃРµРґРЅРёРєСѓ"));
   state.replyingTo = {
     id: msg.id,
     username: authorName,
@@ -3754,7 +3967,7 @@ function cancelEditMessage() {
 }
 
 async function deleteMessage(msgId) {
-  if (!confirm("Удалить сообщение для всех?")) return;
+  if (!confirm("РЈРґР°Р»РёС‚СЊ СЃРѕРѕР±С‰РµРЅРёРµ РґР»СЏ РІСЃРµС…?")) return;
   removeMessageFromDom(msgId);
   if (state.ws && state.ws.readyState === WebSocket.OPEN) {
     state.ws.send(JSON.stringify({ type: "delete", message_id: msgId }));
@@ -3789,18 +4002,18 @@ async function pinMessage(msgId) {
     if (isNowPinned) {
       pinTag = document.createElement("span");
       pinTag.className = "message-pinned-tag";
-      pinTag.title = "Закреплено";
+      pinTag.title = "Р—Р°РєСЂРµРїР»РµРЅРѕ";
       pinTag.innerHTML = `<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M16 9V4l1 0c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1l1 0v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg>`;
       if (meta) meta.appendChild(pinTag);
-      const text = wrap.querySelector(".message-text")?.textContent || "Сообщение";
+      const text = wrap.querySelector(".message-text")?.textContent || "РЎРѕРѕР±С‰РµРЅРёРµ";
       setPinnedMessage({ id: msgId, content: text });
-      showToast("Сообщение закреплено!");
+      showToast("РЎРѕРѕР±С‰РµРЅРёРµ Р·Р°РєСЂРµРїР»РµРЅРѕ!");
     } else {
       pinTag.remove();
       if (state.pinnedMsg && state.pinnedMsg.id === msgId) {
         setPinnedMessage(null);
       }
-      showToast("Сообщение откреплено!");
+      showToast("РЎРѕРѕР±С‰РµРЅРёРµ РѕС‚РєСЂРµРїР»РµРЅРѕ!");
     }
   }
 
@@ -3830,7 +4043,7 @@ function setPinnedMessage(msg) {
     bar.classList.add("hidden");
     return;
   }
-  document.getElementById("pinnedMessageText").textContent = msg.content || (msg.msg_type === "image" ? "Фотография" : "Голосовое сообщение");
+  document.getElementById("pinnedMessageText").textContent = msg.content || (msg.msg_type === "image" ? "Р¤РѕС‚РѕРіСЂР°С„РёСЏ" : "Р“РѕР»РѕСЃРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ");
   bar.classList.remove("hidden");
 }
 
@@ -3899,7 +4112,7 @@ async function sendMessage(event) {
       if (!editTag) {
         editTag = document.createElement("span");
         editTag.className = "message-edited-tag";
-        editTag.textContent = "(изм.)";
+        editTag.textContent = "(РёР·Рј.)";
         const meta = wrap.querySelector(".message-meta");
         if (meta) meta.appendChild(editTag);
       }
@@ -4047,11 +4260,11 @@ async function handleImageFileSelected(event) {
 
 async function sendImageFile(file) {
   if (!state.activeFriend && !state.activeGroup) {
-    showToast("Выбери диалог или конфу");
+    showToast("Р’С‹Р±РµСЂРё РґРёР°Р»РѕРі РёР»Рё РєРѕРЅС„Сѓ");
     return;
   }
   if (file.size > 8 * 1024 * 1024) {
-    showToast("Картинка слишком большая (макс. 8 МБ)");
+    showToast("РљР°СЂС‚РёРЅРєР° СЃР»РёС€РєРѕРј Р±РѕР»СЊС€Р°СЏ (РјР°РєСЃ. 8 РњР‘)");
     return;
   }
 
@@ -4160,15 +4373,15 @@ async function handleGeneralFileSelected(event) {
 
 async function sendGeneralFile(file) {
   if (!state.activeFriend && !state.activeGroup) {
-    showToast("Выбери диалог или конфу");
+    showToast("Р’С‹Р±РµСЂРё РґРёР°Р»РѕРі РёР»Рё РєРѕРЅС„Сѓ");
     return;
   }
   if (file.size > 50 * 1024 * 1024) {
-    showToast("Файл слишком большой (макс. 50 МБ)");
+    showToast("Р¤Р°Р№Р» СЃР»РёС€РєРѕРј Р±РѕР»СЊС€РѕР№ (РјР°РєСЃ. 50 РњР‘)");
     return;
   }
 
-  showToast(`Загрузка файла: ${file.name}...`);
+  showToast(`Р—Р°РіСЂСѓР·РєР° С„Р°Р№Р»Р°: ${file.name}...`);
   const formData = new FormData();
   formData.append("file", file);
 
@@ -4182,7 +4395,7 @@ async function sendGeneralFile(file) {
     });
     const data = await res.json();
     if (!res.ok) {
-      showToast(data.detail || "Ошибка загрузки файла");
+      showToast(data.detail || "РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё С„Р°Р№Р»Р°");
       return;
     }
 
@@ -4248,7 +4461,7 @@ async function sendGeneralFile(file) {
       }
     }
   } catch (err) {
-    showToast("Ошибка сети при отправке файла");
+    showToast("РћС€РёР±РєР° СЃРµС‚Рё РїСЂРё РѕС‚РїСЂР°РІРєРµ С„Р°Р№Р»Р°");
   }
 }
 
@@ -4316,7 +4529,7 @@ function getFileBadge(ext) {
 
 async function openVideoNoteModal() {
   if (!state.activeFriend && !state.activeGroup) {
-    showToast("Выбери диалог или конфу");
+    showToast("Р’С‹Р±РµСЂРё РґРёР°Р»РѕРі РёР»Рё РєРѕРЅС„Сѓ");
     return;
   }
   const modal = document.getElementById("videoNoteModal");
@@ -4380,10 +4593,20 @@ async function initVideoNoteStream() {
     }
 
     let rec;
+    const recOptions = {
+      videoBitsPerSecond: 1800000,
+      audioBitsPerSecond: 128000
+    };
+    if (selectedMime) recOptions.mimeType = selectedMime;
+
     try {
-      rec = selectedMime ? new MediaRecorder(stream, { mimeType: selectedMime }) : new MediaRecorder(stream);
+      rec = new MediaRecorder(stream, recOptions);
     } catch (errRec) {
-      rec = new MediaRecorder(stream);
+      try {
+        rec = selectedMime ? new MediaRecorder(stream, { mimeType: selectedMime }) : new MediaRecorder(stream);
+      } catch (errRec2) {
+        rec = new MediaRecorder(stream);
+      }
     }
 
     state.videoNoteRecorder.chunks = [];
@@ -4419,7 +4642,7 @@ async function initVideoNoteStream() {
     }, 1000);
   } catch (err) {
     closeVideoNoteModal();
-    showToast("Нет доступа к камере или микрофону");
+    showToast("РќРµС‚ РґРѕСЃС‚СѓРїР° Рє РєР°РјРµСЂРµ РёР»Рё РјРёРєСЂРѕС„РѕРЅСѓ");
   }
 }
 
@@ -4494,7 +4717,7 @@ async function stopAndSendVideoNote() {
   state.videoNoteRecorder.mediaRecorder = null;
 
   if (!recordedBlob || recordedBlob.size === 0) {
-    showToast("Не удалось записать кружочек");
+    showToast("РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РїРёСЃР°С‚СЊ РєСЂСѓР¶РѕС‡РµРє");
     return;
   }
 
@@ -4511,7 +4734,7 @@ async function stopAndSendVideoNote() {
     sender_id: state.user.id,
     receiver_id: state.activeFriend ? state.activeFriend.id : null,
     group_id: state.activeGroup ? state.activeGroup.id : null,
-    content: "Видео-кружочек",
+    content: "Р’РёРґРµРѕ-РєСЂСѓР¶РѕС‡РµРє",
     timestamp: timeStr,
     is_read: false,
     msg_type: "video_note",
@@ -4545,7 +4768,7 @@ async function stopAndSendVideoNote() {
     });
     const data = await res.json();
     if (!res.ok) {
-      showToast(data.detail || "Ошибка загрузки кружочка");
+      showToast(data.detail || "РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РєСЂСѓР¶РѕС‡РєР°");
       return;
     }
 
@@ -4559,7 +4782,7 @@ async function stopAndSendVideoNote() {
     const payload = {
       receiver_id: state.activeFriend ? state.activeFriend.id : null,
       group_id: state.activeGroup ? state.activeGroup.id : null,
-      content: "Видео-кружочек",
+      content: "Р’РёРґРµРѕ-РєСЂСѓР¶РѕС‡РµРє",
       timestamp: timeStr,
       msg_type: "video_note",
       media_url: finalUrl,
@@ -4587,7 +4810,7 @@ async function stopAndSendVideoNote() {
       }
     }
   } catch (err) {
-    showToast("Ошибка отправки кружочка");
+    showToast("РћС€РёР±РєР° РѕС‚РїСЂР°РІРєРё РєСЂСѓР¶РѕС‡РєР°");
   }
 }
 
@@ -4764,15 +4987,52 @@ async function startVoiceRecording(event) {
   if (state.voiceRecorder.mediaRecorder) return;
 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const audioConstraints = {
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        channelCount: 1,
+        sampleRate: { ideal: 48000 },
+        sampleSize: { ideal: 16 }
+      }
+    };
+    const stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
     state.voiceRecorder.stream = stream;
     state.voiceRecorder.chunks = [];
 
+    const mimeCandidates = [
+      "audio/webm;codecs=opus",
+      "audio/ogg;codecs=opus",
+      "audio/mp4",
+      "audio/webm"
+    ];
+    let selectedMime = "";
+    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported) {
+      for (const m of mimeCandidates) {
+        if (MediaRecorder.isTypeSupported(m)) {
+          selectedMime = m;
+          break;
+        }
+      }
+    }
+
     let mediaRecorder;
+    const recorderOptions = {
+      audioBitsPerSecond: 160000
+    };
+    if (selectedMime) {
+      recorderOptions.mimeType = selectedMime;
+    }
+
     try {
-      mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+      mediaRecorder = new MediaRecorder(stream, recorderOptions);
     } catch (e) {
-      mediaRecorder = new MediaRecorder(stream);
+      try {
+        mediaRecorder = selectedMime ? new MediaRecorder(stream, { mimeType: selectedMime }) : new MediaRecorder(stream);
+      } catch (e2) {
+        mediaRecorder = new MediaRecorder(stream);
+      }
     }
     state.voiceRecorder.mediaRecorder = mediaRecorder;
 
@@ -4805,7 +5065,7 @@ async function startVoiceRecording(event) {
     if (recBtn) recBtn.classList.remove("recording");
     const lockInd = document.getElementById("voiceLockIndicator");
     if (lockInd) lockInd.classList.add("hidden");
-    showToast("Нет доступа к микрофону");
+    showToast("РќРµС‚ РґРѕСЃС‚СѓРїР° Рє РјРёРєСЂРѕС„РѕРЅСѓ");
   }
 }
 
@@ -4883,7 +5143,7 @@ async function sendVoiceMessage(audioBlob, localUrl, duration) {
     sender_id: state.user.id,
     receiver_id: state.activeFriend ? state.activeFriend.id : null,
     group_id: state.activeGroup ? state.activeGroup.id : null,
-    content: "Голосовое сообщение",
+    content: "Р“РѕР»РѕСЃРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ",
     timestamp: timeStr,
     is_read: false,
     msg_type: "voice",
@@ -4929,7 +5189,7 @@ async function sendVoiceMessage(audioBlob, localUrl, duration) {
     const payload = {
       receiver_id: state.activeFriend ? state.activeFriend.id : null,
       group_id: state.activeGroup ? state.activeGroup.id : null,
-      content: "Голосовое сообщение",
+      content: "Р“РѕР»РѕСЃРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ",
       timestamp: timeStr,
       msg_type: "voice",
       media_url: finalUrl,
@@ -4957,7 +5217,7 @@ async function sendVoiceMessage(audioBlob, localUrl, duration) {
       }
     }
   } catch (err) {
-    showToast("Ошибка отправки голосового сообщения");
+    showToast("РћС€РёР±РєР° РѕС‚РїСЂР°РІРєРё РіРѕР»РѕСЃРѕРІРѕРіРѕ СЃРѕРѕР±С‰РµРЅРёСЏ");
   }
 }
 
@@ -5036,14 +5296,14 @@ function togglePlayVoice(msgId, btnEl, audioUrlParam, durationSecParam) {
     }
     state.activeAudio = null;
     const err = audio.error;
-    let msg = "неизвестно";
+    let msg = "РЅРµРёР·РІРµСЃС‚РЅРѕ";
     if (err) {
-      if (err.code === 1) msg = "Прервано";
-      if (err.code === 2) msg = "Сеть";
-      if (err.code === 3) msg = "Декодирование";
-      if (err.code === 4) msg = "Не поддерживается";
+      if (err.code === 1) msg = "РџСЂРµСЂРІР°РЅРѕ";
+      if (err.code === 2) msg = "РЎРµС‚СЊ";
+      if (err.code === 3) msg = "Р”РµРєРѕРґРёСЂРѕРІР°РЅРёРµ";
+      if (err.code === 4) msg = "РќРµ РїРѕРґРґРµСЂР¶РёРІР°РµС‚СЃСЏ";
     }
-    showToast("Ошибка файла: " + msg);
+    showToast("РћС€РёР±РєР° С„Р°Р№Р»Р°: " + msg);
   };
 
   audio.onended = () => {
@@ -5071,7 +5331,7 @@ function togglePlayVoice(msgId, btnEl, audioUrlParam, durationSecParam) {
         btn.classList.remove("playing");
       }
       state.activeAudio = null;
-      showToast("Ошибка аудио: " + (err.message || err.name || "неизвестно"));
+      showToast("РћС€РёР±РєР° Р°СѓРґРёРѕ: " + (err.message || err.name || "РЅРµРёР·РІРµСЃС‚РЅРѕ"));
     });
   }
 }
@@ -5128,7 +5388,7 @@ function onSearchMessages() {
     }
   });
 
-  countEl.textContent = `${found} найдено`;
+  countEl.textContent = `${found} РЅР°Р№РґРµРЅРѕ`;
   if (firstEl) {
     firstEl.scrollIntoView({ behavior: "smooth", block: "center" });
   }
@@ -5205,7 +5465,7 @@ function updateFriendLastMessage(msg) {
   if (msg.group_id) return;
   const friendId = Number(msg.sender_id) === Number(state.user.id) ? Number(msg.receiver_id) : Number(msg.sender_id);
   const friend = state.friends.find(f => Number(f.id) === friendId);
-  const lastTxt = msg.msg_type === "image" ? "📷 Фото" : (msg.msg_type === "voice" ? "🎙️ Голосовое" : (msg.msg_type === "sticker" ? "🐔 Стикер" : (msg.msg_type === "video_note" ? "📹 Кружочек" : (msg.msg_type === "file" ? `📁 ${msg.file_name || "Файл"}` : msg.content))));
+  const lastTxt = msg.msg_type === "image" ? "рџ“· Р¤РѕС‚Рѕ" : (msg.msg_type === "voice" ? "рџЋ™пёЏ Р“РѕР»РѕСЃРѕРІРѕРµ" : (msg.msg_type === "sticker" ? "рџђ” РЎС‚РёРєРµСЂ" : (msg.msg_type === "video_note" ? "рџ“№ РљСЂСѓР¶РѕС‡РµРє" : (msg.msg_type === "file" ? `рџ“Ѓ ${msg.file_name || "Р¤Р°Р№Р»"}` : msg.content))));
 
   const tStr = formatMessageTime(msg.timestamp);
 
@@ -5220,7 +5480,7 @@ function updateFriendLastMessage(msg) {
   } else {
     state.friends.unshift({
       id: friendId,
-      username: msg.sender_username || "Кент",
+      username: msg.sender_username || "РљРµРЅС‚",
       user_code: "",
       avatar_color: msg.sender_color || "#f59e0b",
       avatar_url: msg.sender_avatar || "",
@@ -5229,7 +5489,7 @@ function updateFriendLastMessage(msg) {
       last_time: tStr,
       unread_count: Number(msg.sender_id) !== Number(state.user.id) ? 1 : 0,
       is_online: true,
-      status_text: "в сети"
+      status_text: "РІ СЃРµС‚Рё"
     });
     renderFriendsList();
     loadFriends();
@@ -5244,7 +5504,7 @@ function updateFriendPresence(userId, isOnline, statusText) {
     renderFriendsList();
     if (state.activeFriend && state.activeFriend.id === userId) {
       const statusEl = document.getElementById("targetStatus");
-      statusEl.textContent = statusText || (isOnline ? "в сети" : "был(а) недавно");
+      statusEl.textContent = statusText || (isOnline ? "РІ СЃРµС‚Рё" : "Р±С‹Р»(Р°) РЅРµРґР°РІРЅРѕ");
       statusEl.className = `target-status ${isOnline ? "online" : ""}`;
       const ind = document.getElementById("targetStatusIndicator");
       if (ind) ind.className = `status-indicator ${isOnline ? "online" : "offline"}`;
@@ -5252,16 +5512,157 @@ function updateFriendPresence(userId, isOnline, statusText) {
   }
 }
 
-function openAddFriendModal() {
+function openAddFriendModal(initialTab = "find") {
   document.getElementById("addFriendModal").classList.remove("hidden");
   document.getElementById("addFriendInput").value = "";
   document.getElementById("addFriendError").classList.add("hidden");
   document.getElementById("addFriendSuccess").classList.add("hidden");
-  setTimeout(() => document.getElementById("addFriendInput").focus(), 50);
+  switchFriendModalTab(initialTab);
+  loadFriendRequests();
+  if (initialTab === "find") {
+    setTimeout(() => document.getElementById("addFriendInput").focus(), 50);
+  }
 }
 
 function closeAddFriendModal() {
   document.getElementById("addFriendModal").classList.add("hidden");
+}
+
+function switchFriendModalTab(tab) {
+  state.friendModalTab = tab;
+  
+  const tabFind = document.getElementById("tabFindFriend");
+  const tabInc = document.getElementById("tabIncomingRequests");
+  const tabOut = document.getElementById("tabOutgoingRequests");
+
+  const viewFind = document.getElementById("friendTabFind");
+  const viewInc = document.getElementById("friendTabIncoming");
+  const viewOut = document.getElementById("friendTabOutgoing");
+
+  if (tabFind) tabFind.classList.toggle("active", tab === "find");
+  if (tabInc) tabInc.classList.toggle("active", tab === "incoming");
+  if (tabOut) tabOut.classList.toggle("active", tab === "outgoing");
+
+  if (viewFind) viewFind.classList.toggle("hidden", tab !== "find");
+  if (viewInc) viewInc.classList.toggle("hidden", tab !== "incoming");
+  if (viewOut) viewOut.classList.toggle("hidden", tab !== "outgoing");
+
+  if (tab === "incoming" || tab === "outgoing") {
+    renderFriendRequests();
+  }
+}
+
+function renderFriendRequests() {
+  const incList = document.getElementById("incomingRequestsList");
+  const outList = document.getElementById("outgoingRequestsList");
+
+  if (incList) {
+    const incoming = (state.friendRequests && state.friendRequests.incoming) ? state.friendRequests.incoming : [];
+    if (incoming.length === 0) {
+      incList.innerHTML = `<div class="empty-requests-msg">Нет входящих заявок в друзья</div>`;
+    } else {
+      incList.innerHTML = incoming.map(req => `
+        <div class="request-card" id="req-card-in-${req.request_id}">
+          <div class="request-user-info">
+            <div class="avatar-circle avatar-medium" style="background:${req.avatar_color || '#5865F2'};${req.avatar_url ? `background-image:url('${req.avatar_url}');background-size:cover;background-position:center;` : ''}">
+              ${!req.avatar_url ? escapeHtml((req.username || "U")[0].toUpperCase()) : ""}
+            </div>
+            <div class="request-user-meta">
+              <div class="request-username">${escapeHtml(req.username)}</div>
+              <div class="request-usercode">${escapeHtml(req.user_code || "")}</div>
+            </div>
+          </div>
+          <div class="request-actions">
+            <button type="button" class="req-btn-accept" onclick="acceptFriendRequest(${req.request_id}, ${req.id})">Принять</button>
+            <button type="button" class="req-btn-reject" onclick="rejectFriendRequest(${req.request_id}, ${req.id})">✕</button>
+          </div>
+        </div>
+      `).join("");
+    }
+  }
+
+  if (outList) {
+    const outgoing = (state.friendRequests && state.friendRequests.outgoing) ? state.friendRequests.outgoing : [];
+    if (outgoing.length === 0) {
+      outList.innerHTML = `<div class="empty-requests-msg">Нет отправленных заявок</div>`;
+    } else {
+      outList.innerHTML = outgoing.map(req => `
+        <div class="request-card" id="req-card-out-${req.request_id}">
+          <div class="request-user-info">
+            <div class="avatar-circle avatar-medium" style="background:${req.avatar_color || '#5865F2'};${req.avatar_url ? `background-image:url('${req.avatar_url}');background-size:cover;background-position:center;` : ''}">
+              ${!req.avatar_url ? escapeHtml((req.username || "U")[0].toUpperCase()) : ""}
+            </div>
+            <div class="request-user-meta">
+              <div class="request-username">${escapeHtml(req.username)}</div>
+              <div class="request-usercode">${escapeHtml(req.user_code || "")}</div>
+            </div>
+          </div>
+          <div class="request-actions">
+            <button type="button" class="req-btn-reject" onclick="rejectFriendRequest(${req.request_id}, ${req.id})" title="Отменить заявку">Отменить</button>
+          </div>
+        </div>
+      `).join("");
+    }
+  }
+
+  updateRequestsBadges();
+}
+
+async function acceptFriendRequest(requestId, senderId) {
+  try {
+    const res = await fetch("/api/friends/requests/accept", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${state.token}`
+      },
+      body: JSON.stringify({ request_id: requestId, sender_id: senderId })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast(data.detail || "Не удалось принять заявку");
+      return;
+    }
+
+    if (data.friend) {
+      const exists = state.friends.some(f => Number(f.id) === Number(data.friend.id));
+      if (!exists) {
+        state.friends.unshift(data.friend);
+        renderFriendsList();
+      }
+      showToast(`🎉 ${data.friend.username} добавлен в друзья!`);
+    }
+
+    if (state.friendRequests && state.friendRequests.incoming) {
+      state.friendRequests.incoming = state.friendRequests.incoming.filter(r => r.request_id !== requestId);
+    }
+    renderFriendRequests();
+  } catch (e) {
+    showToast("Ошибка сети");
+  }
+}
+
+async function rejectFriendRequest(requestId, senderId) {
+  try {
+    await fetch("/api/friends/requests/reject", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${state.token}`
+      },
+      body: JSON.stringify({ request_id: requestId, sender_id: senderId })
+    });
+
+    if (state.friendRequests) {
+      if (state.friendRequests.incoming) {
+        state.friendRequests.incoming = state.friendRequests.incoming.filter(r => r.request_id !== requestId);
+      }
+      if (state.friendRequests.outgoing) {
+        state.friendRequests.outgoing = state.friendRequests.outgoing.filter(r => r.request_id !== requestId);
+      }
+    }
+    renderFriendRequests();
+  } catch (e) {}
 }
 
 async function handleAddFriend(event) {
@@ -5284,20 +5685,26 @@ async function handleAddFriend(event) {
     });
     const data = await res.json();
     if (!res.ok) {
-      errEl.textContent = data.detail || "Не удалось добавить кента";
+      errEl.textContent = data.detail || "Не удалось отправить заявку";
       errEl.classList.remove("hidden");
       return;
     }
 
-    succEl.textContent = `Кент ${data.username} успешно добавлен в список!`;
-    succEl.classList.remove("hidden");
-    state.friends.unshift(data);
-    renderFriendsList();
-
-    setTimeout(() => {
-      closeAddFriendModal();
-      selectFriend(data);
-    }, 700);
+    if (data.status === "accepted" && data.friend) {
+      succEl.textContent = data.message || `Кент ${data.friend.username} успешно добавлен в друзья!`;
+      succEl.classList.remove("hidden");
+      state.friends.unshift(data.friend);
+      renderFriendsList();
+      setTimeout(() => {
+        closeAddFriendModal();
+        selectFriend(data.friend);
+      }, 700);
+    } else {
+      succEl.textContent = data.message || "Заявка в друзья успешно отправлена!";
+      succEl.classList.remove("hidden");
+      input.value = "";
+      loadFriendRequests();
+    }
   } catch (e) {
     errEl.textContent = "Ошибка сети";
     errEl.classList.remove("hidden");
@@ -5307,9 +5714,9 @@ async function handleAddFriend(event) {
 function copyMyCode() {
   if (!state.user) return;
   navigator.clipboard.writeText(state.user.user_code).then(() => {
-    showToast(`Твой код ${state.user.user_code} скопирован в буфер!`);
+    showToast(`РўРІРѕР№ РєРѕРґ ${state.user.user_code} СЃРєРѕРїРёСЂРѕРІР°РЅ РІ Р±СѓС„РµСЂ!`);
   }).catch(() => {
-    showToast(`Твой код: ${state.user.user_code}`);
+    showToast(`РўРІРѕР№ РєРѕРґ: ${state.user.user_code}`);
   });
 }
 
@@ -5334,7 +5741,7 @@ function formatMessageText(text) {
   let escaped = escapeHtml(text);
 
   escaped = escaped.replace(/```([a-zA-Z0-9_-]*)\n?([\s\S]*?)```/g, (match, lang, code) => {
-    return `<pre class="chat-code-block"><div class="code-block-header"><span>${lang || "код"}</span><button type="button" class="copy-code-btn" onclick="copyCodeText(this)">Копировать</button></div><code>${code.trim()}</code></pre>`;
+    return `<pre class="chat-code-block"><div class="code-block-header"><span>${lang || "РєРѕРґ"}</span><button type="button" class="copy-code-btn" onclick="copyCodeText(this)">РљРѕРїРёСЂРѕРІР°С‚СЊ</button></div><code>${code.trim()}</code></pre>`;
   });
 
   escaped = escaped.replace(/`([^`\n]+)`/g, '<code class="chat-inline-code">$1</code>');
@@ -5350,7 +5757,7 @@ function copyCodeText(btn) {
   if (codeEl) {
     navigator.clipboard.writeText(codeEl.textContent).then(() => {
       const orig = btn.textContent;
-      btn.textContent = "Скопировано!";
+      btn.textContent = "РЎРєРѕРїРёСЂРѕРІР°РЅРѕ!";
       setTimeout(() => { btn.textContent = orig; }, 1500);
     }).catch(() => {});
   }
@@ -5403,21 +5810,21 @@ function dismissNotificationPrompt() {
 async function requestNotificationPermission() {
   closeNotificationPromptModal();
   if (!("Notification" in window)) {
-    showToast("Браузер не поддерживает системные уведомления");
+    showToast("Р‘СЂР°СѓР·РµСЂ РЅРµ РїРѕРґРґРµСЂР¶РёРІР°РµС‚ СЃРёСЃС‚РµРјРЅС‹Рµ СѓРІРµРґРѕРјР»РµРЅРёСЏ");
     return;
   }
   try {
     const perm = await Notification.requestPermission();
     if (perm === "granted") {
-      showToast("Уведомления успешно включены! 🎉");
+      showToast("РЈРІРµРґРѕРјР»РµРЅРёСЏ СѓСЃРїРµС€РЅРѕ РІРєР»СЋС‡РµРЅС‹! рџЋ‰");
       sendTestNotification();
     } else if (perm === "denied") {
-      showToast("Уведомления отклонены в настройках браузера");
+      showToast("РЈРІРµРґРѕРјР»РµРЅРёСЏ РѕС‚РєР»РѕРЅРµРЅС‹ РІ РЅР°СЃС‚СЂРѕР№РєР°С… Р±СЂР°СѓР·РµСЂР°");
     }
   } catch (e) {
     Notification.requestPermission((perm) => {
       if (perm === "granted") {
-        showToast("Уведомления успешно включены! 🎉");
+        showToast("РЈРІРµРґРѕРјР»РµРЅРёСЏ СѓСЃРїРµС€РЅРѕ РІРєР»СЋС‡РµРЅС‹! рџЋ‰");
         sendTestNotification();
       }
     });
@@ -5477,7 +5884,7 @@ async function registerWebPush() {
 async function sendTestNotification() {
   const title = "ChickenMax";
   const options = {
-    body: "Уведомления успешно подключены!",
+    body: "РЈРІРµРґРѕРјР»РµРЅРёСЏ СѓСЃРїРµС€РЅРѕ РїРѕРґРєР»СЋС‡РµРЅС‹!",
     icon: "/static/icon-192.png",
     badge: "/static/icon-192.png",
     tag: "test_notification"
@@ -5523,7 +5930,7 @@ async function toggleNotificationsFromSettings() {
   if (t.checked) {
     await requestNotificationPermission();
   } else {
-    showToast("Отключить уведомления можно в настройках сайта в браузере");
+    showToast("РћС‚РєР»СЋС‡РёС‚СЊ СѓРІРµРґРѕРјР»РµРЅРёСЏ РјРѕР¶РЅРѕ РІ РЅР°СЃС‚СЂРѕР№РєР°С… СЃР°Р№С‚Р° РІ Р±СЂР°СѓР·РµСЂРµ");
     t.checked = Notification.permission === "granted";
   }
 }
@@ -5538,26 +5945,26 @@ async function showSystemNotification(msg) {
 
   if (isChatActive) return;
 
-  const senderName = msg.sender_username || "Новое сообщение";
+  const senderName = msg.sender_username || "РќРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ";
   let bodyText = "";
 
   if (msg.msg_type === "image") {
-    bodyText = msg.content ? `📷 Фото: ${msg.content}` : "📷 Фотография";
+    bodyText = msg.content ? `рџ“· Р¤РѕС‚Рѕ: ${msg.content}` : "рџ“· Р¤РѕС‚РѕРіСЂР°С„РёСЏ";
   } else if (msg.msg_type === "voice") {
-    bodyText = "🎙️ Голосовое сообщение";
+    bodyText = "рџЋ™пёЏ Р“РѕР»РѕСЃРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ";
   } else if (msg.msg_type === "video_note") {
-    bodyText = "📹 Видео-кружочек";
+    bodyText = "рџ“№ Р’РёРґРµРѕ-РєСЂСѓР¶РѕС‡РµРє";
   } else if (msg.msg_type === "file") {
-    bodyText = `📁 Файл: ${msg.file_name || "документ"}`;
+    bodyText = `рџ“Ѓ Р¤Р°Р№Р»: ${msg.file_name || "РґРѕРєСѓРјРµРЅС‚"}`;
   } else if (msg.msg_type === "sticker") {
-    bodyText = `🐔 Стикер ${msg.content || ""}`;
+    bodyText = `рџђ” РЎС‚РёРєРµСЂ ${msg.content || ""}`;
   } else if (msg.msg_type === "encrypted") {
-    bodyText = "🔒 Зашифрованное сообщение";
+    bodyText = "рџ”’ Р—Р°С€РёС„СЂРѕРІР°РЅРЅРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ";
   } else {
-    bodyText = msg.content || "Новое сообщение";
+    bodyText = msg.content || "РќРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ";
   }
 
-  const title = msg.group_id ? `Группа (${senderName})` : senderName;
+  const title = msg.group_id ? `Р“СЂСѓРїРїР° (${senderName})` : senderName;
   const options = {
     body: bodyText,
     icon: msg.sender_avatar || "/static/icon-192.png",
@@ -5588,9 +5995,9 @@ async function showSystemNotification(msg) {
 
 async function showCallNotification(callerName) {
   if (!("Notification" in window) || Notification.permission !== "granted") return;
-  const title = "Входящий звонок";
+  const title = "Р’С…РѕРґСЏС‰РёР№ Р·РІРѕРЅРѕРє";
   const options = {
-    body: `📞 Вам звонит ${callerName || "Кент"}`,
+    body: `рџ“ћ Р’Р°Рј Р·РІРѕРЅРёС‚ ${callerName || "РљРµРЅС‚"}`,
     icon: "/static/icon-192.png",
     badge: "/static/icon-192.png",
     tag: "incoming_call",
@@ -5679,3 +6086,9 @@ if ("serviceWorker" in navigator) {
     reg.update().catch(() => {});
   }).catch(() => {});
 }
+
+
+
+
+
+

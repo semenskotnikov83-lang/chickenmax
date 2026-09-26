@@ -9,10 +9,11 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="ChickenMax">
-  <link rel="apple-touch-icon" href="/static/icon-192.png">
-  <link rel="icon" type="image/png" href="/static/icon-192.png">
-  <link rel="stylesheet" href="/static/style.css?v=4">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg?v=2">
+  <link rel="apple-touch-icon" href="/static/icon-192.png?v=2">
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=2">
+  <link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png?v=2">
+  <link rel="stylesheet" href="/static/style.css?v=5">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -96,6 +97,13 @@
       </div>
 
       <div class="dialogs-label">ВАШИ ДИАЛОГИ</div>
+      <div id="incomingRequestsAlertBar" class="incoming-requests-alert-bar hidden" onclick="openAddFriendModal('incoming')">
+        <div class="req-alert-left">
+          <span class="req-alert-icon">📩</span>
+          <span class="req-alert-text">Входящие заявки</span>
+        </div>
+        <span id="sidebarRequestsBadge" class="badge-counter">0</span>
+      </div>
       <div id="friendsList" class="friends-list"></div>
 
       <div class="user-footer" onclick="openMyProfileModal()">
@@ -164,6 +172,11 @@
             <button id="headerCallBtn" class="icon-btn-call" onclick="startVoiceCall()" title="Голосовой звонок">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
                 <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-2.2 2.2a15.054 15.054 0 0 1-6.59-6.59l2.2-2.21a.96.96 0 0 0 .25-1.01A11.36 11.36 0 0 1 8.5 3.92c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.53c0-.55-.45-1-.99-1.01z"/>
+              </svg>
+            </button>
+            <button id="headerVideoCallBtn" class="icon-btn-call icon-btn-video" onclick="startVideoCall()" title="Видеозвонок">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
               </svg>
             </button>
             <div id="targetCodeBadge" class="target-code-badge" onclick="handleHeaderTitleClick()"></div>
@@ -325,8 +338,13 @@
   </div>
 
   <div id="callModal" class="modal-overlay hidden">
-    <div class="modal-box call-modal-box">
-      <div class="call-avatar-wrap">
+    <div id="callModalBox" class="modal-box call-modal-box">
+      <div id="callVideoContainer" class="call-video-container hidden">
+        <video id="callRemoteVideo" class="call-video-remote" autoplay playsinline></video>
+        <video id="callLocalVideo" class="call-video-local" autoplay playsinline muted></video>
+      </div>
+
+      <div id="callAvatarArea" class="call-avatar-wrap">
         <div id="callAvatar" class="avatar-circle avatar-call-pulse"></div>
       </div>
       <div id="callTargetName" class="call-target-name">Кент</div>
@@ -342,6 +360,16 @@
         <button id="callMuteBtn" class="call-btn-mute hidden" onclick="toggleMute()" title="Микрофон">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
             <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+          </svg>
+        </button>
+        <button id="callVideoToggleBtn" class="call-btn-mute hidden" onclick="toggleCallCamera()" title="Камера">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+          </svg>
+        </button>
+        <button id="callSwitchCamBtn" class="call-btn-mute hidden" onclick="switchCallCamera()" title="Сменить камеру">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.65 0-3 1.35-3 3s1.35 3 3 3 3-1.35 3-3-1.35-3-3-3z"/>
           </svg>
         </button>
         <button id="callEndBtn" class="call-btn-end" onclick="endCall()" title="Завершить звонок">
@@ -546,6 +574,10 @@
           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-2.2 2.2a15.054 15.054 0 0 1-6.59-6.59l2.2-2.21a.96.96 0 0 0 .25-1.01A11.36 11.36 0 0 1 8.5 3.92c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.53c0-.55-.45-1-.99-1.01z"/></svg>
           <span>Звонок</span>
         </button>
+        <button type="button" class="profile-action-btn" onclick="actionProfileVideoCall()" title="Видеозвонок">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+          <span>Видео</span>
+        </button>
         <button type="button" class="profile-action-btn" onclick="actionProfileSearch()" title="Поиск в чате">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
           <span>Поиск</span>
@@ -624,23 +656,42 @@
   </div>
 
   <div id="addFriendModal" class="modal-overlay hidden">
-    <div class="modal-box">
+    <div class="modal-box add-friend-modal-box">
       <div class="modal-header">
-        <h3>Добавить кента</h3>
+        <h3>Кенты и заявки</h3>
         <button class="close-btn" onclick="closeAddFriendModal()">&times;</button>
       </div>
-      <p class="modal-desc">Введи уникальный ID кента (например, <b>#78210</b> или его точный никнейм):</p>
-      <form onsubmit="handleAddFriend(event)">
-        <div class="input-group">
-          <input type="text" id="addFriendInput" placeholder="#XXXXX или никнейм" required autocomplete="off">
-        </div>
-        <div id="addFriendError" class="auth-error hidden"></div>
-        <div id="addFriendSuccess" class="auth-success hidden"></div>
-        <div class="modal-actions">
-          <button type="button" class="cancel-btn" onclick="closeAddFriendModal()">Отмена</button>
-          <button type="submit" class="primary-btn">Добавить</button>
-        </div>
-      </form>
+
+      <div class="friend-modal-tabs">
+        <button type="button" class="friend-tab-btn active" id="tabFindFriend" onclick="switchFriendModalTab('find')">Поиск кента</button>
+        <button type="button" class="friend-tab-btn" id="tabIncomingRequests" onclick="switchFriendModalTab('incoming')">
+          Входящие <span id="incomingRequestsBadge" class="badge-counter-small hidden">0</span>
+        </button>
+        <button type="button" class="friend-tab-btn" id="tabOutgoingRequests" onclick="switchFriendModalTab('outgoing')">Исходящие</button>
+      </div>
+
+      <div id="friendTabFind" class="friend-tab-view">
+        <p class="modal-desc" style="margin-top:12px;">Введи уникальный ID кента (например, <b>#78210</b> или его точный никнейм):</p>
+        <form onsubmit="handleAddFriend(event)">
+          <div class="input-group">
+            <input type="text" id="addFriendInput" placeholder="#XXXXX или никнейм" required autocomplete="off">
+          </div>
+          <div id="addFriendError" class="auth-error hidden"></div>
+          <div id="addFriendSuccess" class="auth-success hidden"></div>
+          <div class="modal-actions">
+            <button type="button" class="cancel-btn" onclick="closeAddFriendModal()">Отмена</button>
+            <button type="submit" class="primary-btn">Отправить заявку</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="friendTabIncoming" class="friend-tab-view hidden">
+        <div id="incomingRequestsList" class="requests-list-container"></div>
+      </div>
+
+      <div id="friendTabOutgoing" class="friend-tab-view hidden">
+        <div id="outgoingRequestsList" class="requests-list-container"></div>
+      </div>
     </div>
   </div>
 
@@ -771,6 +822,6 @@
 
   <div id="toast" class="toast hidden"></div>
 
-  <script src="/static/app.js?v=14"></script>
+  <script src="/static/app.js?v=19"></script>
 </body>
 </html>
