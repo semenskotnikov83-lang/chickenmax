@@ -1,4 +1,4 @@
-const CACHE_NAME = "chickenmax-v23";
+const CACHE_NAME = "chickenmax-v25";
 const STATIC_ASSETS = [
   "/",
   "/static/style.css",

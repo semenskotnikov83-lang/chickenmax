@@ -1414,71 +1414,43 @@ async def add_friend(dto: AddFriendDto, user_id: int = Depends(get_current_user_
     if already:
         raise HTTPException(status_code=400, detail="Этот кент уже у тебя в друзьях")
 
-    # Check if target already sent a request to me -> auto-accept mutually!
-    incoming_req = db.fetchone("SELECT id FROM friend_requests WHERE sender_id = ? AND receiver_id = ?", (target_id, user_id))
-    if incoming_req:
-        db.execute("DELETE FROM friend_requests WHERE id = ?", (incoming_req["id"],))
-        db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id) VALUES (?, ?)", (user_id, target_id))
-        db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id) VALUES (?, ?)", (target_id, user_id))
+    db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id) VALUES (?, ?)", (user_id, target_id))
+    db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id) VALUES (?, ?)", (target_id, user_id))
 
-        me = db.fetchone("SELECT id, username, user_code, avatar_color, avatar_url, bio, last_seen FROM users WHERE id = ?", (user_id,))
-        target_online = manager.is_online(target_id)
-        me_online = manager.is_online(user_id)
-
-        await manager.send_to_user(target_id, {
-            "type": "friend_added",
-            "friend": {
-                "id": me["id"],
-                "username": me["username"],
-                "user_code": me["user_code"],
-                "avatar_color": me["avatar_color"],
-                "avatar_url": me["avatar_url"] or "",
-                "bio": me["bio"] or "",
-                "is_online": me_online,
-                "status_text": format_last_seen(me["last_seen"], me_online),
-                "unread_count": 0
-            }
-        })
-
-        return {
-            "status": "accepted",
-            "message": "Взаимная заявка! Кент добавлен в друзья.",
-            "friend": {
-                "id": target["id"],
-                "username": target["username"],
-                "user_code": target["user_code"],
-                "avatar_color": target["avatar_color"],
-                "avatar_url": target["avatar_url"] or "",
-                "bio": target["bio"] or "",
-                "is_online": target_online,
-                "status_text": format_last_seen(target["last_seen"], target_online),
-                "unread_count": 0
-            }
-        }
-
-    # Check if request already sent
-    already_sent = db.fetchone("SELECT 1 FROM friend_requests WHERE sender_id = ? AND receiver_id = ?", (user_id, target_id))
-    if already_sent:
-        raise HTTPException(status_code=400, detail="Заявка этому кенту уже отправлена")
-
-    db.execute("INSERT INTO friend_requests (sender_id, receiver_id) VALUES (?, ?)", (user_id, target_id))
     me = db.fetchone("SELECT id, username, user_code, avatar_color, avatar_url, bio, last_seen FROM users WHERE id = ?", (user_id,))
+    target_online = manager.is_online(target_id)
+    me_online = manager.is_online(user_id)
 
-    # Realtime notification
     await manager.send_to_user(target_id, {
-        "type": "friend_request_received",
-        "request": {
-            "sender_id": user_id,
+        "type": "friend_added",
+        "friend": {
+            "id": me["id"],
             "username": me["username"],
             "user_code": me["user_code"],
             "avatar_color": me["avatar_color"],
             "avatar_url": me["avatar_url"] or "",
-            "bio": me["bio"] or ""
+            "bio": me["bio"] or "",
+            "is_online": me_online,
+            "status_text": format_last_seen(me["last_seen"], me_online),
+            "unread_count": 0
         }
     })
-    send_web_push_to_user(target_id, "Заявка в друзья", f"📩 {me['username']} хочет добавить тебя в друзья!", sender_id=user_id)
 
-    return {"status": "pending", "message": "Заявка в друзья успешно отправлена!"}
+    return {
+        "status": "success",
+        "message": f"Кент {target['username']} добавлен в друзья!",
+        "friend": {
+            "id": target["id"],
+            "username": target["username"],
+            "user_code": target["user_code"],
+            "avatar_color": target["avatar_color"],
+            "avatar_url": target["avatar_url"] or "",
+            "bio": target["bio"] or "",
+            "is_online": target_online,
+            "status_text": format_last_seen(target["last_seen"], target_online),
+            "unread_count": 0
+        }
+    }
 
 @app.get("/api/friends/requests")
 def get_friend_requests(user_id: int = Depends(get_current_user_id)):
