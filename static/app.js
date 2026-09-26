@@ -291,51 +291,46 @@ function playNotificationSound() {
 
 function startRingtone(isIncoming = false) {
   stopRingtone();
-  try {
-    if (!state.audioCtx) {
-      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
-      state.audioCtx = new AudioCtxClass();
-    }
-    if (state.audioCtx.state === "suspended") {
-      state.audioCtx.resume();
+  state.call.isRinging = true;
+
+  if (isIncoming) {
+    const ringtoneAudio = document.getElementById("ringtoneAudio");
+    if (ringtoneAudio) {
+      ringtoneAudio.currentTime = 0;
+      ringtoneAudio.loop = true;
+      ringtoneAudio.volume = 1.0;
+      const playPromise = ringtoneAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {});
+      }
     }
 
-    const playTone = () => {
-      if (!state.call.isRinging) return;
+    if ("vibrate" in navigator) {
       try {
-        if (state.audioCtx.state === "suspended") {
-          state.audioCtx.resume();
-        }
-        const now = state.audioCtx.currentTime;
-        if (isIncoming) {
-          const osc1 = state.audioCtx.createOscillator();
-          const osc2 = state.audioCtx.createOscillator();
-          const gain = state.audioCtx.createGain();
+        navigator.vibrate([500, 250, 500, 250, 1000]);
+        state.call.vibrateInterval = setInterval(() => {
+          if (!state.call.isRinging) return;
+          try { navigator.vibrate([500, 250, 500, 250, 1000]); } catch (e) {}
+        }, 2500);
+      } catch (e) {}
+    }
+  } else {
+    try {
+      if (!state.audioCtx) {
+        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+        state.audioCtx = new AudioCtxClass();
+      }
+      if (state.audioCtx.state === "suspended") {
+        state.audioCtx.resume();
+      }
 
-          osc1.type = "sine";
-          osc2.type = "sine";
-          osc1.frequency.setValueAtTime(523.25, now);
-          osc1.frequency.setValueAtTime(659.25, now + 0.2);
-          osc1.frequency.setValueAtTime(783.99, now + 0.4);
-
-          osc2.frequency.setValueAtTime(659.25, now);
-          osc2.frequency.setValueAtTime(783.99, now + 0.2);
-          osc2.frequency.setValueAtTime(1046.50, now + 0.4);
-
-          gain.gain.setValueAtTime(0.001, now);
-          gain.gain.exponentialRampToValueAtTime(0.18, now + 0.05);
-          gain.gain.setValueAtTime(0.18, now + 0.65);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
-
-          osc1.connect(gain);
-          osc2.connect(gain);
-          gain.connect(state.audioCtx.destination);
-
-          osc1.start(now);
-          osc2.start(now);
-          osc1.stop(now + 0.92);
-          osc2.stop(now + 0.92);
-        } else {
+      const playTone = () => {
+        if (!state.call.isRinging) return;
+        try {
+          if (state.audioCtx.state === "suspended") {
+            state.audioCtx.resume();
+          }
+          const now = state.audioCtx.currentTime;
           const osc = state.audioCtx.createOscillator();
           const gain = state.audioCtx.createGain();
 
@@ -352,18 +347,33 @@ function startRingtone(isIncoming = false) {
 
           osc.start(now);
           osc.stop(now + 1.02);
-        }
-      } catch (e) {}
-    };
+        } catch (e) {}
+      };
 
-    state.call.isRinging = true;
-    playTone();
-    state.call.ringtoneInterval = setInterval(playTone, isIncoming ? 2200 : 3500);
-  } catch (e) {}
+      playTone();
+      state.call.ringtoneInterval = setInterval(playTone, 3500);
+    } catch (e) {}
+  }
 }
 
 function stopRingtone() {
   state.call.isRinging = false;
+
+  const ringtoneAudio = document.getElementById("ringtoneAudio");
+  if (ringtoneAudio) {
+    ringtoneAudio.pause();
+    ringtoneAudio.currentTime = 0;
+  }
+
+  if (state.call.vibrateInterval) {
+    clearInterval(state.call.vibrateInterval);
+    state.call.vibrateInterval = null;
+  }
+
+  if ("vibrate" in navigator) {
+    try { navigator.vibrate(0); } catch (e) {}
+  }
+
   if (state.call.ringtoneInterval) {
     clearInterval(state.call.ringtoneInterval);
     state.call.ringtoneInterval = null;

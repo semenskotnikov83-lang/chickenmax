@@ -1,4 +1,4 @@
-const CACHE_NAME = "chickenmax-v25";
+const CACHE_NAME = "chickenmax-v26";
 const STATIC_ASSETS = [
   "/",
   "/static/style.css",
@@ -6,7 +6,8 @@ const STATIC_ASSETS = [
   "/static/manifest.json",
   "/static/favicon.svg",
   "/static/icon-192.png",
-  "/static/icon-512.png"
+  "/static/icon-512.png",
+  "/static/ringtone.wav"
 ];
 
 self.addEventListener("install", (event) => {

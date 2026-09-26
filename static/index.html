@@ -375,6 +375,7 @@
   </div>
 
   <audio id="remoteAudio" autoplay playsinline style="position:fixed;bottom:-9999px;right:-9999px;width:1px;height:1px;opacity:0.001;pointer-events:none;"></audio>
+  <audio id="ringtoneAudio" src="/static/ringtone.wav?v=2" preload="auto" loop style="display:none;"></audio>
   <input type="file" id="avatarFileInput" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" onchange="handleAvatarFile(event)">
 
   <div id="profileModal" class="modal-overlay hidden">
@@ -796,6 +797,6 @@
 
   <div id="toast" class="toast hidden"></div>
 
-  <script src="/static/app.js?v=22"></script>
+  <script src="/static/app.js?v=23"></script>
 </body>
 </html>
